@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import './result.css';
+import './Result.css';
 import io from 'socket.io-client';
 
 const Result = () => {
