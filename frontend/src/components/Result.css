@@ -1,0 +1,156 @@
+.result-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  padding: 20px;
+  color: white;
+}
+
+.result-card {
+  background: rgba(31, 31, 31, 0.9);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 600px;
+  padding: 2.5rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.result-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.result-title {
+  color: white;
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, #6e45e2, #88d3ce);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.score-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 1.5rem;
+  font-size: 1.3rem;
+}
+
+.score-label {
+  color: #94a3b8;
+}
+
+.score-value {
+  font-weight: bold;
+  color: #6e45e2;
+  font-size: 1.8rem;
+}
+
+.result-message {
+  font-size: 1.3rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.feedback {
+  text-align: center;
+  font-size: 1.2rem;
+  margin: 1.5rem 0;
+  padding: 1rem;
+  border-radius: 8px;
+  width: 100%;
+}
+
+.feedback.correct {
+  background: rgba(46, 125, 50, 0.2);
+  color: #81c784;
+  border: 1px solid #81c784;
+}
+
+.feedback.wrong {
+  background: rgba(211, 47, 47, 0.2);
+  color: #e57373;
+  border: 1px solid #e57373;
+}
+
+.game-mode {
+  color: #94a3b8;
+  margin-bottom: 2rem;
+  font-size: 1rem;
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.btn {
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  min-width: 150px;
+}
+
+.btn.primary {
+  background: linear-gradient(135deg, #6e45e2, #88d3ce);
+  color: white;
+}
+
+.btn.secondary {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #94a3b8;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(110, 69, 226, 0.4);
+}
+
+.btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+@media (max-width: 768px) {
+  .result-card {
+    padding: 1.5rem;
+  }
+
+  .result-title {
+    font-size: 1.8rem;
+  }
+
+  .result-message {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .result-card {
+    padding: 1.2rem;
+    width: 95%;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+  }
+}
