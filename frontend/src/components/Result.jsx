@@ -6,6 +6,7 @@ const Result = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [results, setResults] = useState(null);
+  const baseUrl = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     if (location.state) {
@@ -13,7 +14,7 @@ const Result = () => {
       return;
     }
 
-    // Fallback for direct access
+   
     const savedResults = sessionStorage.getItem('quizResults');
     if (savedResults) {
       setResults(JSON.parse(savedResults));
@@ -57,7 +58,7 @@ const Result = () => {
     );
   }
 
-  // Render your existing UI
+  
   return (
     <div className="result-container">
       <div className="result-card">

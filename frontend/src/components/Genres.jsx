@@ -4,9 +4,10 @@ import "./Genres.css";
 
 function Genres({ user }) {
   const [genres, setGenres] = useState([]);
+  const baseUrl = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
-    fetch("http://localhost:8080/api/genres")
+    fetch(`${baseUrl}/api/genres`)
       .then((res) => res.json())
       .then((data) => setGenres(data));
   }, [user]);

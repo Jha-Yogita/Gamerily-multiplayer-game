@@ -16,6 +16,7 @@ const PlayScreen = () => {
   const currentUsername = localStorage.getItem('username') || 'Player';
   const opponentRef = useRef(null);
   const timerRef = useRef(null);
+  const baseUrl = import.meta.env.VITE_API_URL;
   const questionStartTime = useRef(null);
   const totalCorrectTime = useRef(0);
 
@@ -41,7 +42,7 @@ const PlayScreen = () => {
     }
 
     if (!socket.current || !socket.current.connected) {
-      socket.current = io('http://localhost:8080', {
+      socket.current = io(`${baseUrl}`, {
         withCredentials: true,
         transports: ['websocket'],
         reconnectionAttempts: 3,
@@ -109,7 +110,7 @@ const PlayScreen = () => {
     } else {
       const fetchQuestions = async () => {
         try {
-          const res = await axios.get(`http://localhost:8080/api/play/${genre.trim().toUpperCase()}`);
+          const res = await axios.get(`${baseUrl}/api/play/${genre.trim().toUpperCase()}`);
           setQuestions(res.data);
           setCurrentIndex(0);
           resetQuestionState();
@@ -196,7 +197,7 @@ const PlayScreen = () => {
     setWaitingForOpponent(true);
 
     try {
-      await axios.post('http://localhost:8080/api/submit-results', {
+      await axios.post(`${baseUrl}/api/submit-results`, {
         roomId,
         username: currentUsername,
         score: myScore,
@@ -205,7 +206,7 @@ const PlayScreen = () => {
 
       const pollInterval = setInterval(async () => {
         try {
-          const response = await axios.post('http://localhost:8080/api/check-results', {
+          const response = await axios.post(`${baseUrl}/api/check-results`, {
             roomId
           });
 

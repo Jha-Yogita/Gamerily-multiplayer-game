@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 
 function Signup({ onSignupSuccess }) {
   const navigate = useNavigate();
+  const baseUrl = import.meta.env.VITE_API_URL;
   const [form, setForm] = useState({
     username: "",
     password: "",
@@ -25,7 +26,7 @@ function Signup({ onSignupSuccess }) {
 
   try {
     const res = await axios.post(
-      "http://localhost:8080/auth/signup",
+      `${baseUrl}/auth/signup`,
       form,
       {
         withCredentials: true,
@@ -42,12 +43,13 @@ function Signup({ onSignupSuccess }) {
 
     
     const userRes = await axios.get(
-      "http://localhost:8080/auth/current_user",
+      `${baseUrl}/auth/current_user`,
       { withCredentials: true }
     );
 
     console.log("Current User:", userRes.data);
     onSignupSuccess();
+    toast.success("Welcome to Gamerily");
     navigate("/");
   } catch (err) {
     console.error("Full error:", err);

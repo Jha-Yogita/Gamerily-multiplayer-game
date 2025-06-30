@@ -4,6 +4,7 @@ import "./Footer.css";
 function Footer() {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
+  const baseUrl = import.meta.env.VITE_API_URL;
 
   const handleNotify = async () => {
     if (!email) {
@@ -12,7 +13,7 @@ function Footer() {
     }
 
     try {
-      const res = await fetch("http://localhost:8080/notify", {
+      const res = await fetch(`${baseUrl}/notify`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

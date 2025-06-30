@@ -17,11 +17,12 @@ import Result from './components/Result.jsx'
 
 function App() {
   const [user, setUser] = useState(null); 
+  const baseUrl = import.meta.env.VITE_API_URL;
   
    useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        const res = await fetch("http://localhost:8080/auth/current_user", {
+        const res = await fetch(`${baseUrl}/auth/current_user`, {
           credentials: "include"
         });
         if (res.ok) {
@@ -44,7 +45,7 @@ function App() {
   
   const handleSignupSuccess = async () => {
   try {
-    const res = await fetch("http://localhost:8080/auth/current_user", {
+    const res = await fetch(`${baseUrl}/auth/current_user`, {
       credentials: "include"
     });
     const data = await res.json();

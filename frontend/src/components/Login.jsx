@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 
 function Login({ onLoginSuccess }) {
   const navigate = useNavigate();
+  const baseUrl = import.meta.env.VITE_API_URL;
   const [form, setForm] = useState({
     username: "",
     password: ""
@@ -40,7 +41,7 @@ function Login({ onLoginSuccess }) {
     setIsLoading(true);
     
     try {
-      const res = await axios.post("http://localhost:8080/auth/login", form, {
+      const res = await axios.post(`${baseUrl}/auth/login`, form, {
         withCredentials: true
       });
       

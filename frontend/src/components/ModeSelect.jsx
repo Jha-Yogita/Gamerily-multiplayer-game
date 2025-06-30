@@ -2,12 +2,13 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import io from "socket.io-client";
 import "./ModeSelect.css";
-
-const socket = io("http://localhost:8080", {
+const baseUrl = import.meta.env.VITE_API_URL;
+const socket = io(`${baseUrl}`, {
   withCredentials: true,
 });
 
 const ModeSelect = ({ user }) => {
+  
   const navigate = useNavigate();
   const { genre } = useParams();
   const [step, setStep] = useState(1);

@@ -3,6 +3,7 @@ import "./Navbar.css";
 import { useState } from 'react';
 
 function Navbar({ currUser }) {
+  const baseUrl = import.meta.env.VITE_API_URL;
   return (
     <nav className="navbar navbar-expand-md gamerily-navbar sticky-top shadow-sm">
       <div className="container-fluid">

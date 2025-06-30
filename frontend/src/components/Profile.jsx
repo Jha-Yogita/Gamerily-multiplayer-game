@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 function Profile({ user, onLogout, onUpdateUser }) {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
+  const baseUrl = import.meta.env.VITE_API_URL;
   const [formData, setFormData] = useState({
     username: user.username,
     email: user.email
@@ -20,7 +21,7 @@ function Profile({ user, onLogout, onUpdateUser }) {
   const handleSubmit = async (e) => {
   e.preventDefault();
   try {
-    const res = await axios.put(`http://localhost:8080/user/${user._id}`, formData, {
+    const res = await axios.put(`${baseUrl}/user/${user._id}`, formData, {
       withCredentials: true
     });
 
@@ -28,7 +29,7 @@ function Profile({ user, onLogout, onUpdateUser }) {
       onUpdateUser(res.data.user);
       toast.success("Profile updated successfully!");
     } else {
-      toast.success("Profile updated!"); // fallback success
+      toast.success("Profile updated!"); 
     }
 
     setIsEditing(false);
@@ -46,7 +47,7 @@ function Profile({ user, onLogout, onUpdateUser }) {
 
   setIsDeleting(true);
   try {
-    const res = await axios.delete(`http://localhost:8080/user/${user._id}`, {
+    const res = await axios.delete(`${baseUrl}/user/${user._id}`, {
       withCredentials: true
     });
 

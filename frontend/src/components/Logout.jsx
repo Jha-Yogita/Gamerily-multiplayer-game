@@ -6,10 +6,11 @@ import { toast } from 'react-toastify';
 
 function Logout({ onLogout }) {
   const navigate = useNavigate();
+  const baseUrl = import.meta.env.VITE_API_URL;
   
   const handleLogout = async () => {
     try {
-      await axios.post("http://localhost:8080/auth/logout", {}, { withCredentials: true });
+      await axios.post(`${baseUrl}/auth/logout`, {}, { withCredentials: true });
       console.log("Logged out successfully");
       onLogout(); 
       localStorage.removeItem("username");
