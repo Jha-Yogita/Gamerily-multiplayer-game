@@ -41,51 +41,59 @@ const PlayScreen = () => {
       if (opponent) opponentRef.current = opponent;
     }
 
-    if (!socket.current || !socket.current.connected) {
-      socket.current = io(`${baseUrl}`, {
-        withCredentials: true,
-        transports: ['websocket'],
-        reconnectionAttempts: 3,
-        reconnectionDelay: 1000
-      });
+    const connectWithDelay = () => {
+      setTimeout(() => {
+        if (!socket.current || !socket.current.connected) {
+          socket.current = io(`${baseUrl}`, {
+            withCredentials: true,
+            transports: ['websocket'],
+            reconnectionAttempts: 5,
+            reconnectionDelay: 2000
+          });
 
-      socket.current.on('connect', () => {
-        setSocketConnected(true);
-      });
+          socket.current.on('connect', () => {
+            console.log("✅ Socket connected");
+            setSocketConnected(true);
+          });
 
-      socket.current.on('disconnect', () => {
-        setSocketConnected(false);
-      });
+          socket.current.on('disconnect', () => {
+            console.log("❌ Socket disconnected");
+            setSocketConnected(false);
+          });
 
-      socket.current.on('connect_error', (err) => {
-        toast.error('Connection failed. Please try again.');
-      });
+          socket.current.on('connect_error', (err) => {
+            toast.error('Connection failed. Please try again.');
+          });
 
-      socket.current.on('opponentCompleted', ({ username, score }) => {
-        if (username === opponentRef.current) {
-          setOpponentFinished(true);
-          toast.info(`${username} has finished!`);
+          socket.current.on('opponentCompleted', ({ username, score }) => {
+            if (username === opponentRef.current) {
+              setOpponentFinished(true);
+              toast.info(`${username} has finished!`);
+            }
+          });
+
+          socket.current.on('finalResults', (resultsData) => {
+            const formatted = {
+              player1: resultsData.player1,
+              player2: resultsData.player2,
+              winner: resultsData.winner,
+              solo: false
+            };
+            sessionStorage.setItem('quizResults', JSON.stringify(formatted));
+            navigate('/result', { state: formatted, replace: true });
+          });
+
+          socket.current.on('playerDisconnected', ({ username }) => {
+            if (username === opponentRef.current) {
+              toast.error(`${username} disconnected`);
+              navigate('/', { replace: true });
+            }
+          });
         }
-      });
+      }, 4000); 
+    };
 
-      socket.current.on('finalResults', (resultsData) => {
-        const formatted = {
-          player1: resultsData.player1,
-          player2: resultsData.player2,
-          winner: resultsData.winner,
-          solo: false
-        };
-        sessionStorage.setItem('quizResults', JSON.stringify(formatted));
-        navigate('/result', { state: formatted, replace: true });
-      });
-
-      socket.current.on('playerDisconnected', ({ username }) => {
-        if (username === opponentRef.current) {
-          toast.error(`${username} disconnected`);
-          navigate('/', { replace: true });
-        }
-      });
-    }
+    connectWithDelay();
 
     return () => {
       if (socket.current) {
