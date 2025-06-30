@@ -25,7 +25,7 @@ const server = http.createServer(app);
 
 const io = socketIO(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin:  "https://gamerily.vercel.app",
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -142,14 +142,14 @@ io.on("connection", (socket) => {
   });
 });
 
-// MongoDB
+
 mongoose.connect(process.env.MONGO_URL)
   .then(() => console.log("Connected to MongoDB"))
   .catch(console.error);
 
-// Middleware
+
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin:  "https://gamerily.vercel.app",
   credentials: true
 }));
 app.use(cookieParser());
