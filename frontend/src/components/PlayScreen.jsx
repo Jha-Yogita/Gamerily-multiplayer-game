@@ -46,7 +46,7 @@ const PlayScreen = () => {
         if (!socket.current || !socket.current.connected) {
           socket.current = io(`${baseUrl}`, {
             withCredentials: true,
-            transports: ['websocket'],
+            transports: ['websocket','polling'],
             reconnectionAttempts: 5,
             reconnectionDelay: 2000
           });
