@@ -150,7 +150,12 @@ io.on("connection", (socket) => {
 });
 
 
-mongoose.connect(process.env.MONGO_URL)
+mongoose.connect(process.env.MONGO_URL, {
+  tls: true,
+  tlsInsecure: false,
+  sslValidate: true,
+  family: 4,
+})
   .then(() => console.log("Connected to MongoDB"))
   .catch(console.error);
 
