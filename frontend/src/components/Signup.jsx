@@ -19,26 +19,43 @@ function Signup({ onSignupSuccess }) {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setIsLoading(true);
+  e.preventDefault();
+  setError("");
+  setIsLoading(true);
+
+  try {
+    const res = await axios.post(
+      "http://localhost:8080/auth/signup",
+      form,
+      {
+        withCredentials: true,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+
+    console.log("Signup Response:", res.data);
+
     
-    try {
-      const res = await axios.post("http://localhost:8080/signup", form, {
-        withCredentials: true
-      });
-      console.log("Signup successful", res.data);
-      onSignupSuccess();
-      toast.success("Signup successful!");
-      navigate("/");
-    } catch (err) {
-      console.error("Signup failed:", err.response?.data?.msg || err.message);
-      setError(err.response?.data?.msg || "Signup failed. Please try again.");
-      toast.error(err.response?.data?.msg || "Signup failed. Please try again.");
-    } finally {
-      setIsLoading(false);
+    if (res.data.sessionId) {
+      document.cookie = `connect.sid=${res.data.sessionId}; path=/`;
     }
-  };
+
+    
+    const userRes = await axios.get(
+      "http://localhost:8080/auth/current_user",
+      { withCredentials: true }
+    );
+
+    console.log("Current User:", userRes.data);
+    onSignupSuccess();
+    navigate("/");
+  } catch (err) {
+    console.error("Full error:", err);
+    setError(err.response?.data?.msg || "Signup failed");
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   useEffect(() => {
     const script = document.createElement("script");

@@ -180,6 +180,111 @@
   color: #94a3b8;
   z-index: 1;
 }
+.play-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  position: relative;
+  overflow: hidden;
+}
+
+.play-container::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  top: 0;
+  left: 0;
+  background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1IiBoZWlnaHQ9IjUiPgo8cmVjdCB3aWR0aD0iNSIgaGVpZ2h0PSI1IiBmaWxsPSIjMDAwMDAwIj48L3JlY3Q+CjxwYXRoIGQ9Ik0wIDVMNSAwWk02IDRMNCA2Wk0tMSAxTDEgLTFaIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiIHN0cm9rZS13aWR0aD0iMSI+PC9wYXRoPgo8L3N2Zz4=');
+}
+
+.waiting-screen {
+  background-color: rgba(31, 31, 31, 0.9);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 500px;
+  padding: 2.5rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  z-index: 1;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+.waiting-screen h2 {
+  color: white;
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, #6e45e2, #88d3ce);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  border-top-color: #6e45e2;
+  margin: 0 auto 2rem;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.waiting-scores {
+  color: #94a3b8;
+  margin-bottom: 2rem;
+  font-size: 1rem;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.waiting-scores p {
+  margin: 0.5rem 0;
+}
+
+.waiting-scores p:last-child {
+  margin-bottom: 0;
+}
+
+.cancel-button {
+  width: 100%;
+  padding: 1rem;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #6e45e2, #88d3ce);
+  color: white;
+  border: none;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 1rem;
+}
+
+.cancel-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(110, 69, 226, 0.4);
+}
+
+@media (max-width: 480px) {
+  .waiting-screen {
+    padding: 1.5rem;
+    width: 95%;
+  }
+  
+  .waiting-screen h2 {
+    font-size: 1.5rem;
+  }
+}
 
 @media (max-width: 768px) {
   .play-card {

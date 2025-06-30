@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import io from 'socket.io-client';
@@ -6,23 +6,21 @@ import { toast } from 'react-toastify';
 import './PlayScreen.css';
 
 const PlayScreen = () => {
-  const { genre, index } = useParams();
+  const { genre } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   const socket = useRef(null);
-
-  const parsedIndex = parseInt(index, 10);
   const solo = location.state?.solo || false;
   const roomId = location.state?.roomId || null;
   const players = location.state?.players || [];
   const currentUsername = localStorage.getItem('username') || 'Player';
-
   const opponentRef = useRef(null);
   const timerRef = useRef(null);
   const questionStartTime = useRef(null);
   const totalCorrectTime = useRef(0);
 
-  const [question, setQuestion] = useState(null);
+  const [questions, setQuestions] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [userAns, setUserAns] = useState('');
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState('');
@@ -30,148 +28,116 @@ const PlayScreen = () => {
   const [myScore, setMyScore] = useState(0);
   const [timer, setTimer] = useState(10);
   const [waitingForOpponent, setWaitingForOpponent] = useState(false);
-  const [opponentScore, setOpponentScore] = useState(0);
   const [opponentFinished, setOpponentFinished] = useState(false);
   const [socketConnected, setSocketConnected] = useState(false);
+  const [reconnectAttempts, setReconnectAttempts] = useState(0);
 
-  // Initialize socket connection and event listeners
+  const question = questions[currentIndex];
+
   useEffect(() => {
-    console.log('Initializing socket connection...');
-    
-    // Set opponent if in multiplayer mode
     if (!solo && players.length > 0) {
-      const opponent = players.find((p) => p !== currentUsername);
-      if (opponent) {
-        opponentRef.current = opponent;
-        console.log(`Opponent set to: ${opponent}`);
-      }
+      const opponent = players.find(p => p !== currentUsername);
+      if (opponent) opponentRef.current = opponent;
     }
 
-    socket.current = io('http://localhost:8080', {
-      withCredentials: true,
-      transports: ['websocket'],
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000
-    });
-
-    socket.current.on('connect', () => {
-      console.log('Socket connected!');
-      setSocketConnected(true);
-    });
-
-    socket.current.on('disconnect', () => {
-      console.log('Socket disconnected');
-      setSocketConnected(false);
-    });
-
-    socket.current.on('connect_error', (err) => {
-      console.error('Socket connection error:', err);
-      toast.error('Connection problem. Trying to reconnect...');
-    });
-
-    // Event handlers
-    const onOpponentCompleted = ({ username, score }) => {
-      console.log(`Received opponentCompleted: ${username} scored ${score}`);
-      if (username === opponentRef.current) {
-        setOpponentScore(score);
-        setOpponentFinished(true);
-        toast.info(`${username} has finished the quiz!`);
-      }
-    };
-
-    const onShowResults = (resultsData) => {
-      console.log('SHOW RESULTS DATA RECEIVED:', resultsData);
-      
-      // Determine which player is the current user
-      const isPlayer1 = resultsData.player1.username === currentUsername;
-      const resultState = {
-        solo: false,
-        myScore: isPlayer1 ? resultsData.player1.score : resultsData.player2.score,
-        oppScore: isPlayer1 ? resultsData.player2.score : resultsData.player1.score,
-        myUsername: currentUsername,
-        oppUsername: isPlayer1 ? resultsData.player2.username : resultsData.player1.username,
-        winner: resultsData.winner,
-        myTime: isPlayer1 ? resultsData.player1.totalTime : resultsData.player2.totalTime,
-        oppTime: isPlayer1 ? resultsData.player2.totalTime : resultsData.player1.totalTime
-      };
-
-      // Store in sessionStorage as backup
-      sessionStorage.setItem('quizResults', JSON.stringify(resultState));
-
-      // Navigate to results page
-      navigate('/result', {
-        state: resultState,
-        replace: true
+    if (!socket.current || !socket.current.connected) {
+      socket.current = io('http://localhost:8080', {
+        withCredentials: true,
+        transports: ['websocket'],
+        reconnectionAttempts: 3,
+        reconnectionDelay: 1000
       });
-    };
 
-    const onPlayerDisconnected = ({ username }) => {
-      console.log(`Player disconnected: ${username}`);
-      if (username === opponentRef.current) {
-        toast.error(`${username} disconnected!`);
-        navigate('/', { replace: true });
-      }
-    };
+      socket.current.on('connect', () => {
+        setSocketConnected(true);
+      });
 
-    const onReconnectAttempt = (attempt) => {
-      console.log(`Reconnection attempt ${attempt}`);
-    };
+      socket.current.on('disconnect', () => {
+        setSocketConnected(false);
+      });
 
-    // Attach event listeners
-    socket.current.on('opponentCompleted', onOpponentCompleted);
-    socket.current.on('showResults', onShowResults);
-    socket.current.on('playerDisconnected', onPlayerDisconnected);
-    socket.current.io.on('reconnect_attempt', onReconnectAttempt);
+      socket.current.on('connect_error', (err) => {
+        toast.error('Connection failed. Please try again.');
+      });
+
+      socket.current.on('opponentCompleted', ({ username, score }) => {
+        if (username === opponentRef.current) {
+          setOpponentFinished(true);
+          toast.info(`${username} has finished!`);
+        }
+      });
+
+      socket.current.on('finalResults', (resultsData) => {
+        const formatted = {
+          player1: resultsData.player1,
+          player2: resultsData.player2,
+          winner: resultsData.winner,
+          solo: false
+        };
+        sessionStorage.setItem('quizResults', JSON.stringify(formatted));
+        navigate('/result', { state: formatted, replace: true });
+      });
+
+      socket.current.on('playerDisconnected', ({ username }) => {
+        if (username === opponentRef.current) {
+          toast.error(`${username} disconnected`);
+          navigate('/', { replace: true });
+        }
+      });
+    }
 
     return () => {
-      console.log('Cleaning up socket connection');
       if (socket.current) {
-        socket.current.off('opponentCompleted', onOpponentCompleted);
-        socket.current.off('showResults', onShowResults);
-        socket.current.off('playerDisconnected', onPlayerDisconnected);
-        socket.current.io.off('reconnect_attempt', onReconnectAttempt);
-        socket.current.disconnect();
+        socket.current.off('finalResults');
+        socket.current.off('opponentCompleted');
+        if (solo) {
+          socket.current.disconnect();
+        }
       }
     };
   }, [solo, players, currentUsername, navigate]);
 
-  // Fetch question and manage question state
   useEffect(() => {
-    const fetchQuestion = async () => {
-      try {
-        const res = await axios.get(
-          `http://localhost:8080/play/${genre.trim().toUpperCase()}/${parsedIndex}`
-        );
-        setQuestion(res.data);
-        resetQuestionState();
-        questionStartTime.current = Date.now();
-        startTimer();
-      } catch (err) {
-        console.error('Question fetch error:', err);
-        toast.error('Error loading question');
-      }
-    };
+    const sharedQuestions = location.state?.questions;
 
-    const resetQuestionState = () => {
-      setUserAns('');
-      setFeedback('');
-      setFeedbackType('');
-      setAnswered(false);
-      setTimer(10);
-    };
+    if (!solo && sharedQuestions) {
+      setQuestions(sharedQuestions);
+      setCurrentIndex(0);
+      resetQuestionState();
+      questionStartTime.current = Date.now();
+      startTimer();
+    } else {
+      const fetchQuestions = async () => {
+        try {
+          const res = await axios.get(`http://localhost:8080/api/play/${genre.trim().toUpperCase()}`);
+          setQuestions(res.data);
+          setCurrentIndex(0);
+          resetQuestionState();
+          questionStartTime.current = Date.now();
+          startTimer();
+        } catch (err) {
+          toast.error('Error loading questions');
+        }
+      };
 
-    fetchQuestion();
+      fetchQuestions();
+    }
 
-    return () => {
-      clearInterval(timerRef.current);
-    };
-  }, [genre, parsedIndex]);
+    return () => clearInterval(timerRef.current);
+  }, [solo, genre, location.state?.questions]);
 
-  // Timer management
+  const resetQuestionState = () => {
+    setUserAns('');
+    setFeedback('');
+    setFeedbackType('');
+    setAnswered(false);
+    setTimer(10);
+  };
+
   const startTimer = () => {
     clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
-      setTimer((prev) => {
+      setTimer(prev => {
         if (prev <= 1) {
           handleTimeUp();
           return 0;
@@ -183,94 +149,141 @@ const PlayScreen = () => {
 
   const handleTimeUp = () => {
     clearInterval(timerRef.current);
-    if (!answered) {
-      submitAnswer(false);
-    }
+    if (!answered) submitAnswer(false);
   };
 
-  // Answer handling
-  const checkAnswerCorrectness = (userAnswer, correctAnswer) => {
+  const checkAnswerCorrectness = useCallback((userAnswer, correctAnswer) => {
     const sanitize = (str) => str.trim().toLowerCase().replace(/[^a-z0-9\s]/g, '');
     const userAns = sanitize(userAnswer);
     const correctAns = sanitize(correctAnswer);
     const correctWords = correctAns.split(/\s+/);
-
     return correctWords.some(word => userAns.includes(word)) || userAns === correctAns;
-  };
+  }, []);
 
-  const submitAnswer = (isCorrect) => {
+  const submitAnswer = useCallback((isCorrect) => {
     setAnswered(true);
     clearInterval(timerRef.current);
-
     const timeTaken = (Date.now() - questionStartTime.current) / 1000;
-    
     setFeedback(isCorrect ? `Correct! : ${question.answer}` : `Wrong! Correct answer: ${question.answer}`);
     setFeedbackType(isCorrect ? 'correct' : 'wrong');
-
     if (isCorrect) {
-      const newScore = myScore + 1;
-      setMyScore(newScore);
+      setMyScore(myScore + 1);
       totalCorrectTime.current += timeTaken;
     }
-  };
+  }, [question, myScore]);
 
-  const checkAnswer = () => {
+  const checkAnswer = useCallback(() => {
     if (!question || answered) return;
     const isCorrect = checkAnswerCorrectness(userAns, question.answer);
     submitAnswer(isCorrect);
-  };
+  }, [question, answered, userAns, checkAnswerCorrectness, submitAnswer]);
 
-  // Quiz navigation
-  const handleFinishQuiz = () => {
-    if (!solo && socket.current && socketConnected) {
-      console.log(`Emitting quizCompleted for room ${roomId}`);
-      socket.current.emit('quizCompleted', {
+  const handleFinishQuiz = async () => {
+    if (solo) {
+      const soloResults = {
+        solo: true,
+        player1: {
+          username: currentUsername,
+          score: myScore,
+          totalTime: totalCorrectTime.current
+        }
+      };
+      sessionStorage.setItem('quizResults', JSON.stringify(soloResults));
+      navigate('/result', { state: soloResults });
+      return;
+    }
+
+    setWaitingForOpponent(true);
+
+    try {
+      await axios.post('http://localhost:8080/api/submit-results', {
         roomId,
         username: currentUsername,
         score: myScore,
         totalTime: totalCorrectTime.current
       });
-      setWaitingForOpponent(true);
-      toast.info('Waiting for opponent to finish...');
-    } else {
-      navigate('/result', {
-        state: {
-          solo: true,
-          score: myScore,
-          username: currentUsername,
-          totalTime: totalCorrectTime.current
-        },
-        replace: true
-      });
+
+      const pollInterval = setInterval(async () => {
+        try {
+          const response = await axios.post('http://localhost:8080/api/check-results', {
+            roomId
+          });
+
+          if (response.data.player1 && response.data.player2) {
+            clearInterval(pollInterval);
+            sessionStorage.setItem('quizResults', JSON.stringify(response.data));
+            navigate('/result', { state: response.data });
+          }
+        } catch (err) {
+          clearInterval(pollInterval);
+        }
+      }, 2000);
+
+    } catch (err) {
+      toast.error("Submission failed");
+      setWaitingForOpponent(false);
     }
   };
 
   const handleNextQuestion = () => {
-    navigate(`/play/${genre}/${parsedIndex + 1}`, {
-      state: { solo, roomId, players },
-      replace: true
-    });
+    if (currentIndex + 1 >= questions.length) {
+      handleFinishQuiz();
+    } else {
+      setCurrentIndex(currentIndex + 1);
+      resetQuestionState();
+      questionStartTime.current = Date.now();
+      startTimer();
+    }
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Enter' && !answered) checkAnswer();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [checkAnswer, answered]);
+
+  if (waitingForOpponent) {
+    return (
+      <div className="play-container">
+        <div className="waiting-screen">
+          <h2>Waiting for opponent to finish...</h2>
+          <div className="spinner"></div>
+          <div className="waiting-scores">
+            <p>Your Score: {myScore}</p>
+            <p>Status: {opponentFinished ? 'Finished' : 'Playing...'}</p>
+          </div>
+          <button
+            className="cancel-button"
+            onClick={() => {
+              toast.dismiss('waiting-toast');
+              navigate('/');
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="play-container">
       {!solo && (
         <div className="versus-title">
           {currentUsername} <span className="vs">vs</span> {opponentRef.current}
-          {!socketConnected && <span className="connection-badge">Connecting...</span>}
+          {!socketConnected && (
+            <span className="connection-badge">
+              {reconnectAttempts > 0 ? `Reconnecting (${reconnectAttempts})` : 'Connecting...'}
+            </span>
+          )}
         </div>
       )}
-
       <div className="score-board">
         <div className="player-score you">
           {currentUsername}: {myScore}
         </div>
-        {!solo && (
-          <div className="player-score opponent">
-            {opponentRef.current}: {opponentScore}
-            {opponentFinished && <span className="finished-badge">Finished</span>}
-          </div>
-        )}
         <div className="timer">Time: {timer}s</div>
       </div>
 
@@ -279,22 +292,18 @@ const PlayScreen = () => {
           <div className="play-content">
             <h2 className="play-title">{question.category}</h2>
             <p className="play-question">{question.question}</p>
-
             <input
               type="text"
               placeholder="Enter your answer..."
               value={userAns}
               onChange={(e) => setUserAns(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && checkAnswer()}
               disabled={answered}
               className="play-input"
               autoFocus
             />
-
             {feedback && (
               <div className={`feedback ${feedbackType}`}>{feedback}</div>
             )}
-
             <div className="play-actions">
               {!answered ? (
                 <button
@@ -305,23 +314,18 @@ const PlayScreen = () => {
                   Submit Answer
                 </button>
               ) : (
-                <button 
-                  onClick={parsedIndex + 1 >= 5 ? handleFinishQuiz : handleNextQuestion} 
+                <button
+                  onClick={handleNextQuestion}
                   className="play-button secondary"
-                  disabled={waitingForOpponent && !opponentFinished}
                 >
-                  {parsedIndex + 1 >= 5 
-                    ? (waitingForOpponent 
-                        ? (opponentFinished ? 'Calculating results...' : 'Waiting for opponent...') 
-                        : 'Finish Quiz') 
-                    : 'Next Question'}
+                  {currentIndex + 1 >= questions.length ? 'Finish Quiz' : 'Next Question'}
                 </button>
               )}
             </div>
           </div>
         </div>
       ) : (
-        <div className="loading">Loading question...</div>
+        <div className="loading">Loading questions...</div>
       )}
     </div>
   );

@@ -26,9 +26,15 @@ const ModeSelect = ({ user }) => {
       setWaiting(true);
     });
 
-    socket.on("startMatch", ({ roomId, players }) => {
-      navigate(`/play/${genre.trim().toUpperCase()}/0`, {
-        state: { roomId, players, solo: false },
+  
+    socket.on("startMatch", ({ roomId, players, questions }) => {
+      navigate(`/play/${genre.trim().toUpperCase()}`, {
+        state: {
+          solo: false,
+          roomId,
+          players,
+          questions, 
+        },
       });
     });
 
@@ -51,9 +57,8 @@ const ModeSelect = ({ user }) => {
     setError("");
 
     if (selectedMode === "solo") {
-     
-      navigate(`/play/${genre.trim().toUpperCase()}/0`, {
-        state: { solo: true }
+      navigate(`/play/${genre.trim().toUpperCase()}`, {
+        state: { solo: true },
       });
     } else {
       setStep(2);
@@ -67,7 +72,11 @@ const ModeSelect = ({ user }) => {
     }
 
     const newRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-    socket.emit("createRoom", { roomId: newRoomId, username: user.username });
+    socket.emit("createRoom", {
+      roomId: newRoomId,
+      username: user.username,
+      genre: genre.trim().toUpperCase(), 
+    });
   };
 
   const handleJoinRoom = () => {

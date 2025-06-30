@@ -96,7 +96,7 @@
   box-shadow: 0 0 20px var(--genre-color);
 }
 
-/* Responsive */
+
 @media (max-width: 768px) {
   .genres-title {
     font-size: 2rem;

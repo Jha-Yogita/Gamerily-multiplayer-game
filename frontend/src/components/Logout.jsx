@@ -9,7 +9,7 @@ function Logout({ onLogout }) {
   
   const handleLogout = async () => {
     try {
-      await axios.post("http://localhost:8080/logout", {}, { withCredentials: true });
+      await axios.post("http://localhost:8080/auth/logout", {}, { withCredentials: true });
       console.log("Logged out successfully");
       onLogout(); 
       localStorage.removeItem("username");

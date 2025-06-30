@@ -1,101 +1,93 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './Result.css';
-import io from 'socket.io-client';
 
 const Result = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [results, setResults] = useState(null);
-  const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    // First check location state
     if (location.state) {
-      console.log('Results from navigation state:', location.state);
-      setResults(location.state);
+      setResults(processResults(location.state));
       return;
     }
 
-    // Then check session storage
+    // Fallback for direct access
     const savedResults = sessionStorage.getItem('quizResults');
     if (savedResults) {
-      console.log('Results from sessionStorage:', JSON.parse(savedResults));
       setResults(JSON.parse(savedResults));
-      return;
+    } else {
+      navigate('/');
     }
+  }, [location.state, navigate]);
 
-    // If no results found, set up socket to listen
-    const newSocket = io('http://localhost:8080', {
-      withCredentials: true,
-      transports: ['websocket']
-    });
+  const processResults = (data) => {
+  const isSolo = data.solo || !data.player2;
 
-    newSocket.on('showResults', (data) => {
-      console.log('Received results via socket:', data);
-      setResults({
-        ...data,
-        solo: false
-      });
-      sessionStorage.setItem('quizResults', JSON.stringify(data));
-    });
+  const results = {
+    solo: isSolo,
+    player1: {
+      username: data.player1?.username || data.myUsername || 'Player 1',
+      score: data.player1?.score || data.myScore || 0,
+      totalTime: data.player1?.totalTime || data.myTime || 0
+    },
+    player2: isSolo
+      ? null
+      : {
+          username: data.player2?.username || data.oppUsername || 'Player 2',
+          score: data.player2?.score || data.oppScore || 0,
+          totalTime: data.player2?.totalTime || data.oppTime || 0
+        },
+    winner: data.winner || null
+  };
 
-    newSocket.on('connect_error', (err) => {
-      console.error('Socket error in Results:', err);
-    });
+  sessionStorage.setItem('quizResults', JSON.stringify(results));
+  return results;
+};
 
-    setSocket(newSocket);
-
-    return () => {
-      if (newSocket) newSocket.disconnect();
-    };
-  }, [location]);
 
   if (!results) {
     return (
       <div className="result-container">
         <div className="result-card">
           <h1>Loading Results...</h1>
-          <p>Please wait while we fetch your results</p>
-          <p>If this takes too long, please return home and try again</p>
-          <button onClick={() => navigate('/')}>Go Home</button>
         </div>
       </div>
     );
   }
 
-  // Calculate winner if not provided
-  const winner = results.winner || 
-    (results.myScore > results.oppScore ? results.myUsername :
-     results.oppScore > results.myScore ? results.oppUsername : 
-     'tie');
-
+  // Render your existing UI
   return (
     <div className="result-container">
       <div className="result-card">
         <h1>Quiz Results</h1>
-        
         <div className="score-display">
           <div className="player-result">
-            <h3>{results.myUsername}</h3>
-            <p>Score: {results.myScore}</p>
-            <p>Time: {results.myTime?.toFixed(2) || '0.00'}s</p>
+            <h3>{results.player1.username}</h3>
+            <p>Score: {results.player1.score}</p>
+            {!results.solo && <p>Time: {results.player1.totalTime.toFixed(2)}s</p>}
           </div>
-
-          <div className="vs">vs</div>
-
-          <div className="player-result">
-            <h3>{results.oppUsername}</h3>
-            <p>Score: {results.oppScore}</p>
-            <p>Time: {results.oppTime?.toFixed(2) || '0.00'}s</p>
-          </div>
+          {!results.solo && (
+            <>
+              <div className="vs">vs</div>
+              <div className="player-result">
+                <h3>{results.player2.username}</h3>
+                <p>Score: {results.player2.score}</p>
+                <p>Time: {results.player2.totalTime.toFixed(2)}s</p>
+              </div>
+            </>
+          )}
         </div>
-
         <div className="final-result">
-          {winner === results.myUsername && <h2 className="win">🎉 You Won! 🎉</h2>}
-          {winner === results.oppUsername && <h2 className="lose">😢 You Lost</h2>}
-          {winner === 'tie' && <h2 className="tie">🤝 It's a Tie!</h2>}
-        </div>
+ {results.solo ? (
+  <h2 className="solo-score">Your Score: {results.player1.score}</h2>
+) : results.winner === (localStorage.getItem('username') || 'Player') ? (
+  <h2 className="win">🎉 You Won! 🎉</h2>
+) : (
+  <h2 className="lose">😢 You Lost</h2>
+)}
+</div>
 
         <div className="action-buttons">
           <button onClick={() => navigate('/genres')}>Play Again</button>

@@ -18,39 +18,49 @@ function Profile({ user, onLogout, onUpdateUser }) {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await axios.put(`http://localhost:8080/user/${user._id}`, formData, {
-        withCredentials: true
-      });
+  e.preventDefault();
+  try {
+    const res = await axios.put(`http://localhost:8080/user/${user._id}`, formData, {
+      withCredentials: true
+    });
+
+    if (res.data?.user) {
       onUpdateUser(res.data.user);
-      setIsEditing(false);
       toast.success("Profile updated successfully!");
-    } catch (err) {
-      console.error("Update failed:", err);
-      toast.error(err.response?.data?.msg || "Update failed. Please try again.");
+    } else {
+      toast.success("Profile updated!"); // fallback success
     }
-  };
+
+    setIsEditing(false);
+  } catch (err) {
+    console.error("Update failed:", err);
+    toast.error(err.response?.data?.msg || "Update failed. Please try again.");
+  }
+};
+
 
   const handleDelete = async () => {
-    if (!window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
-      return;
-    }
-    
-    setIsDeleting(true);
-    try {
-      await axios.delete(`http://localhost:8080/user/${user._id}`, {
-        withCredentials: true
-      });
-      toast.success("Account deleted successfully");
-      onLogout();
-      navigate("/");
-    } catch (err) {
-      console.error("Delete failed:", err);
-      toast.error(err.response?.data?.msg || "Delete failed. Please try again.");
-      setIsDeleting(false);
-    }
-  };
+  if (!window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+    return;
+  }
+
+  setIsDeleting(true);
+  try {
+    const res = await axios.delete(`http://localhost:8080/user/${user._id}`, {
+      withCredentials: true
+    });
+
+    toast.success(res.data?.msg || "Account deleted successfully");
+
+    onLogout();
+    navigate("/");
+  } catch (err) {
+    console.error("Delete failed:", err);
+    toast.error(err.response?.data?.msg || "Delete failed. Please try again.");
+    setIsDeleting(false);
+  }
+};
+
 
   return (
     <div className="profile-container">

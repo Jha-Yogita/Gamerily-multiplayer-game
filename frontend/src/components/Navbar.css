@@ -6,7 +6,7 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Brand styling */
+
 .navbar-brand {
   display: flex;
   align-items: center;
@@ -45,7 +45,7 @@
   transform: translateY(-2px);
 }
 
-/* Auth links */
+
 .auth-link {
   padding: 0.5rem 1.5rem !important;
 }
@@ -55,8 +55,6 @@
   color: white !important;
   -webkit-text-fill-color: white !important;
 }
-
-/* User dropdown button */
 .user-btn {
   background: linear-gradient(135deg, #6e45e2, #88d3ce);
   border: none;
@@ -82,7 +80,6 @@
   font-size: 1.2rem;
 }
 
-/* Dropdown menu */
 .dropdown-menu {
   background-color: #1f1f1f;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -96,7 +93,7 @@
   background-color: rgba(110, 69, 226, 0.2) !important;
 }
 
-/* Responsive styles */
+
 @media (max-width: 767px) {
   .navbar-nav {
     flex-direction: column;

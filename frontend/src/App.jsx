@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import { useState } from 'react'
+import { useState,useEffect } from 'react'
 import './App.css'
 import Navbar from './components/Navbar.jsx'
 import HomePage from './components/HomePage.jsx'
@@ -16,15 +16,47 @@ import Profile from './components/Profile.jsx'
 import Result from './components/Result.jsx'
 
 function App() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(null); 
+  
+   useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const res = await fetch("http://localhost:8080/auth/current_user", {
+          credentials: "include"
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data.user);
+        } else {
+          setUser(null);
+        }
+      } catch (err) {
+        console.error("Error checking user session:", err);
+      }
+    };
+
+    fetchCurrentUser();
+  }, []);
   
   const handleLoginSuccess = (userData) => {
     setUser(userData); 
   }
   
-  const handleSignupSuccess = () => {
-    console.log("Signup succeeded");
-  };
+  const handleSignupSuccess = async () => {
+  try {
+    const res = await fetch("http://localhost:8080/auth/current_user", {
+      credentials: "include"
+    });
+    const data = await res.json();
+    if (res.ok) {
+      setUser(data.user);
+    } else {
+      console.error("Failed to fetch user after signup.");
+    }
+  } catch (err) {
+    console.error("Error fetching user:", err);
+  }
+};
   
   const handleLogoutSuccess = () => {
     setUser(null);
@@ -42,12 +74,12 @@ function App() {
         <Navbar currUser={user} />
         <ToastContainer />
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<HomePage currUser={user}/>} />
           <Route path="/genres" element={<Genres />} />
           <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess}/>} />
           <Route path="/signup" element={<Signup onSignupSuccess={handleSignupSuccess}/>} />
           <Route path='/logout' element={<Logout onLogout={handleLogoutSuccess}/>} />
-          <Route path="/play/:genre/:index" element={<PlayScreen />} />
+          <Route path="/play/:genre" element={<PlayScreen />} />
           <Route path="/result" element={<Result />} />
           <Route path="/select/:genre" element={<ModeSelect user={user} />} />
           <Route 

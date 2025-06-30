@@ -1,13 +1,22 @@
 import { Link } from 'react-router-dom';
 import "./HomePage.css";
 import { Typewriter } from "react-simple-typewriter";
+import {useNavigate}  from 'react-router-dom';
 
-function HomePage() {
+function HomePage({currUser}) {
+  const navigate = useNavigate();
   const genres = [
     { name: 'Anime', video: 'Gojo_Satoru.mp4', color: '#ff6b6b' },
     { name: 'Science', video: 'earth.mp4', color: '#4ecdc4' },
     { name: 'Movies', video: 'tony.mp4', color: '#ffbe0b' }
   ];
+  const handleStartPlaying = () => {
+    if (currUser) {
+      navigate("/genres");
+    } else {
+      navigate("/login");
+    }
+  };
 
   return (
     <div className="home-container">
@@ -91,9 +100,12 @@ function HomePage() {
               <p>Improve at your own pace</p>
             </div>
           </div>
-          <Link to="/signup" className="cta-button main-cta">
-            Start Playing Now
-          </Link>
+          <button 
+      className="cta-button main-cta" 
+      onClick={handleStartPlaying}
+    >
+      Start Playing Now
+    </button>
         </div>
       </section>
     </div>
