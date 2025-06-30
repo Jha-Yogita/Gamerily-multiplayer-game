@@ -22,6 +22,13 @@ const notifyRoutes = require("./routes/notifyRoutes");
 
 const app = express();
 const server = http.createServer(app);
+app.use(cors({
+  origin:  "https://gamerily.vercel.app",
+  credentials: true
+}));
+app.use(cookieParser());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 const io = socketIO(server, {
   cors: {
@@ -148,13 +155,7 @@ mongoose.connect(process.env.MONGO_URL)
   .catch(console.error);
 
 
-app.use(cors({
-  origin:  "https://gamerily.vercel.app",
-  credentials: true
-}));
-app.use(cookieParser());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
 const store=MongoStore.create({
   mongoUrl:process.env.MONGO_URL,
   crypto: {
