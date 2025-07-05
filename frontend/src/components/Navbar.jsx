@@ -13,7 +13,7 @@ function Navbar() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await axios.get(`${baseUrl}/auth/current-user`, { 
+        const res = await axios.get(`${baseUrl}/auth/current_user`, { 
           withCredentials: true 
         });
         setCurrUser(res.data.user || null);

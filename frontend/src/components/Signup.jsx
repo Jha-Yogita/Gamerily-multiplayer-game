@@ -36,7 +36,7 @@ function Signup({ onSignupSuccess }) {
 
     // 2. Immediately check session
     const sessionCheck = await axios.get(
-      `${baseUrl}/auth/current-user`, 
+      `${baseUrl}/auth/current_user`, 
       { withCredentials: true }
     );
 
