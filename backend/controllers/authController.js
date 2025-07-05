@@ -42,8 +42,14 @@ exports.logout = (req, res, next) => {
 
 exports.currentUser = (req, res) => {
   if (req.user) {
-    res.json({ user: req.user });
+    res.json({ 
+      user: req.user,
+      sessionId: req.sessionID  
+    });
   } else {
-    res.status(401).json({ msg: "Not logged in" });
+    res.status(401).json({ 
+      msg: "Not logged in",
+      sessionId: req.sessionID  
+    });
   }
 };

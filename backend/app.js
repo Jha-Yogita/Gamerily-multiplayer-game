@@ -24,7 +24,8 @@ const app = express();
 const server = http.createServer(app);
 app.use(cors({
   origin:  "https://gamerily.vercel.app",
-  credentials: true
+  credentials: true ,
+  exposedHeaders: ["set-cookie"] 
 }));
 app.use(cookieParser());
 app.use(express.json());
@@ -180,6 +181,8 @@ app.use(session({
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production', 
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', 
+     
+    domain: ".vercel.app",
   }
 }));
 

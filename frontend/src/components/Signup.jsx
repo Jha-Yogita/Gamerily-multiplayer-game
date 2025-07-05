@@ -19,38 +19,36 @@ function Signup({ onSignupSuccess }) {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
+ const handleSubmit = async (e) => {
   e.preventDefault();
   setError("");
   setIsLoading(true);
 
   try {
+    // 1. Sign up user
     const res = await axios.post(
       `${baseUrl}/auth/signup`,
       form,
-      {
-        withCredentials: true,
-        headers: { 'Content-Type': 'application/json' }
-      }
+      { withCredentials: true }
     );
 
     console.log("Signup Response:", res.data);
 
-    
-    if (res.data.sessionId) {
-      document.cookie = `connect.sid=${res.data.sessionId}; path=/`;
-    }
-
-    
-    const userRes = await axios.get(
-      `${baseUrl}/auth/current_user`,
+    // 2. Immediately check session
+    const sessionCheck = await axios.get(
+      `${baseUrl}/auth/current-user`, 
       { withCredentials: true }
     );
 
-    console.log("Current User:", userRes.data);
-    onSignupSuccess();
-    toast.success("Welcome to Gamerily");
-    navigate("/");
+    if (sessionCheck.data.user) {
+      // 3. Store user in frontend state
+      localStorage.setItem("user", JSON.stringify(sessionCheck.data.user));
+      onSignupSuccess();
+      toast.success("Welcome to Gamerily");
+      navigate("/");
+    } else {
+      throw new Error("Session not persisted");
+    }
   } catch (err) {
     console.error("Full error:", err);
     setError(err.response?.data?.msg || "Signup failed");
@@ -58,7 +56,6 @@ function Signup({ onSignupSuccess }) {
     setIsLoading(false);
   }
 };
-
   useEffect(() => {
     const script = document.createElement("script");
     script.src = "https://cdn.jsdelivr.net/npm/particles.js";
