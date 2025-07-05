@@ -21,20 +21,15 @@ function App() {
   
    useEffect(() => {
     const fetchCurrentUser = async () => {
-      try {
-        const res = await fetch(`${baseUrl}/auth/current_user`, {
-          credentials: "include"
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data.user);
-        } else {
-          setUser(null);
-        }
-      } catch (err) {
-        console.error("Error checking user session:", err);
-      }
-    };
+  try {
+    const res = await axios.get(`${baseUrl}/auth/current_user`);
+    setUser(res.data.user);
+  } catch (err) {
+    console.error("Error checking user session:", err);
+    setUser(null);
+    toast.info("Session expired. Please log in again.");
+  }
+};
 
     fetchCurrentUser();
   }, []);
@@ -45,19 +40,13 @@ function App() {
   
   const handleSignupSuccess = async () => {
   try {
-    const res = await fetch(`${baseUrl}/auth/current_user`, {
-      credentials: "include"
-    });
-    const data = await res.json();
-    if (res.ok) {
-      setUser(data.user);
-    } else {
-      console.error("Failed to fetch user after signup.");
-    }
+    const res = await axios.get(`${baseUrl}/auth/current_user`);
+    setUser(res.data.user);
   } catch (err) {
     console.error("Error fetching user:", err);
   }
 };
+
   
   const handleLogoutSuccess = () => {
     setUser(null);
