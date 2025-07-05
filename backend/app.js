@@ -177,12 +177,14 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'none'
+    secure: true, // Always true because Vercel is HTTPS
+    sameSite: 'none', // Cross-site cookies need this
+    domain: '.vercel.app' // Allow subdomains
   }
 }));
+
 
 app.use(flash());
 app.use(passport.initialize());
