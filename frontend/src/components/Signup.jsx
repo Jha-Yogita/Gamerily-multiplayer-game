@@ -33,8 +33,7 @@ function Signup({ onSignupSuccess }) {
     );
 
     console.log("Signup Response:", res.data);
-    setUser(res.data.user);
-localStorage.setItem('user', JSON.stringify(res.data.user));
+    
 
     // 2. Immediately check session
     const sessionCheck = await axios.get(

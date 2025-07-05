@@ -44,10 +44,11 @@ function App() {
     setUser(userData); 
   }
   
-  const handleSignupSuccess = async () => {
+ const handleSignupSuccess = async () => {
   try {
-    const res = await axios.get(`${baseUrl}/auth/current_user`,{ withCredentials: true });
+    const res = await axios.get(`${baseUrl}/auth/current_user`, { withCredentials: true });
     setUser(res.data.user);
+    localStorage.setItem('user', JSON.stringify(res.data.user));
   } catch (err) {
     console.error("Error fetching user:", err);
   }
