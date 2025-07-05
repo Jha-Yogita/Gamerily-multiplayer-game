@@ -177,11 +177,11 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    maxAge: 7 * 24 * 60 * 60 * 1000,
     httpOnly: true,
-    secure: true, // Always true because Vercel is HTTPS
-    sameSite: 'none', // Cross-site cookies need this
-    domain: '.vercel.app' // Allow subdomains
+    secure: process.env.NODE_ENV === "production", // only secure in production
+    sameSite: process.env.NODE_ENV === "production" ? 'none' : 'lax'
+    // domain: '.vercel.app' // REMOVE unless frontend/backend share same root domain
   }
 }));
 

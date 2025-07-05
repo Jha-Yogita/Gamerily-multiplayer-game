@@ -19,7 +19,10 @@ import { toast } from "react-toastify";
 
 
 function App() {
-  const [user, setUser] = useState(null); 
+  const [user, setUser] = useState(() => {
+  const storedUser = localStorage.getItem("user");
+  return storedUser ? JSON.parse(storedUser) : null;
+});
   const baseUrl = import.meta.env.VITE_API_URL;
   
    useEffect(() => {
