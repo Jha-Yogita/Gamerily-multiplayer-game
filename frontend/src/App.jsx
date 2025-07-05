@@ -22,7 +22,7 @@ function App() {
    useEffect(() => {
     const fetchCurrentUser = async () => {
   try {
-    const res = await axios.get(`${baseUrl}/auth/current_user`);
+    const res = await axios.get(`${baseUrl}/auth/current_user`,{ withCredentials: true });
     setUser(res.data.user);
   } catch (err) {
     console.error("Error checking user session:", err);
@@ -40,7 +40,7 @@ function App() {
   
   const handleSignupSuccess = async () => {
   try {
-    const res = await axios.get(`${baseUrl}/auth/current_user`);
+    const res = await axios.get(`${baseUrl}/auth/current_user`,{ withCredentials: true });
     setUser(res.data.user);
   } catch (err) {
     console.error("Error fetching user:", err);

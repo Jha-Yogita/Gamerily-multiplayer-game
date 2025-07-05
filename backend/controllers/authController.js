@@ -8,12 +8,16 @@ exports.signup = async (req, res, next) => {
     User.register(newUser, password, (err, user) => {
       if (err) return res.status(400).json({ msg: err.message });
 
-      req.login(user, err => {
+      req.login(user, (err) => {
         if (err) return next(err);
-        res.json({
-          msg: "Signup & login successful",
-          user: { _id: user._id, username: user.username },
-          sessionId: req.sessionID
+
+        req.session.save(err => {
+          if (err) return next(err);
+          res.json({
+            msg: "Signup & login successful",
+            user: { _id: user._id, username: user.username },
+            sessionId: req.sessionID
+          });
         });
       });
     });
@@ -28,7 +32,10 @@ exports.login = (req, res, next) => {
     if (!user) return res.status(401).json({ msg: info?.message || "Invalid credentials" });
     req.login(user, err => {
       if (err) return next(err);
-      return res.json({ user: req.user });
+     req.session.save(err => {
+  if (err) return next(err);
+  return res.json({ user: req.user });
+});
     });
   })(req, res, next);
 };
