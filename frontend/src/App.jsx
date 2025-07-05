@@ -14,6 +14,9 @@ import 'react-toastify/dist/ReactToastify.css';
 import ModeSelect from "./components/ModeSelect.jsx";
 import Profile from './components/Profile.jsx'
 import Result from './components/Result.jsx'
+import axios from "axios";
+import { toast } from "react-toastify";
+
 
 function App() {
   const [user, setUser] = useState(null); 
