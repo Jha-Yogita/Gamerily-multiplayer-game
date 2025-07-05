@@ -213,20 +213,28 @@ const PlayScreen = () => {
       });
 
       const pollInterval = setInterval(async () => {
-        try {
-          const response = await axios.post(`${baseUrl}/api/check-results`, {
-            roomId
-          });
+  try {
+    const response = await axios.post(`${baseUrl}/api/check-results`, { roomId });
+    if (response.data.player1 && response.data.player2) {
+      clearInterval(pollInterval);
+      clearTimeout(pollingTimeout);
+      sessionStorage.setItem('quizResults', JSON.stringify(response.data));
+      navigate('/result', { state: response.data });
+    }
+  } catch (err) {
+    clearInterval(pollInterval);
+    clearTimeout(pollingTimeout);
+    toast.error("Failed to fetch results.");
+    navigate('/');
+  }
+}, 2000);
 
-          if (response.data.player1 && response.data.player2) {
-            clearInterval(pollInterval);
-            sessionStorage.setItem('quizResults', JSON.stringify(response.data));
-            navigate('/result', { state: response.data });
-          }
-        } catch (err) {
-          clearInterval(pollInterval);
-        }
-      }, 2000);
+
+const pollingTimeout = setTimeout(() => {
+  clearInterval(pollInterval);
+  toast.error("Opponent took too long to respond.");
+  navigate('/');
+}, 30000);
 
     } catch (err) {
       toast.error("Submission failed");
