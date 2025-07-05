@@ -15,7 +15,11 @@ exports.signup = async (req, res, next) => {
           if (err) return next(err);
           res.json({
             msg: "Signup & login successful",
-            user: { _id: user._id, username: user.username },
+            user: { 
+              _id: user._id, 
+              username: user.username,
+              email: user.email  // Include email to match frontend expectations
+            },
             sessionId: req.sessionID
           });
         });

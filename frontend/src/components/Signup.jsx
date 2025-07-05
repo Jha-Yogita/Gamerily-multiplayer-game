@@ -34,25 +34,18 @@ function Signup({ onSignupSuccess }) {
 
     console.log("Signup Response:", res.data);
     
-
-    // 2. Immediately check session
-    const sessionCheck = await axios.get(
-      `${baseUrl}/auth/current_user`, 
-      { withCredentials: true }
-    );
-
-    if (sessionCheck.data.user) {
-      // 3. Store user in frontend state
-      localStorage.setItem("user", JSON.stringify(sessionCheck.data.user));
+    // 2. If signup was successful, call onSignupSuccess immediately
+    if (res.data.success) {
+      localStorage.setItem("user", JSON.stringify(res.data.user));
       onSignupSuccess();
       toast.success("Welcome to Gamerily");
       navigate("/");
     } else {
-      throw new Error("Session not persisted");
+      throw new Error(res.data.msg || "Signup failed");
     }
   } catch (err) {
     console.error("Full error:", err);
-    setError(err.response?.data?.msg || "Signup failed");
+    setError(err.response?.data?.msg || err.message || "Signup failed");
   } finally {
     setIsLoading(false);
   }
