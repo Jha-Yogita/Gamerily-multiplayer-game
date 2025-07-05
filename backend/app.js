@@ -25,7 +25,7 @@ const server = http.createServer(app);
 app.use(cors({
   origin:  "https://gamerily.vercel.app",
   credentials: true ,
-  exposedHeaders: ["set-cookie"] 
+ 
 }));
 app.use(cookieParser());
 app.use(express.json());
@@ -171,20 +171,17 @@ const store=MongoStore.create({
 store.on("error",()=> {
   console.log("Error in store");
 })
-app.use(session({
-  store,
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production", // only secure in production
-    sameSite: process.env.NODE_ENV === "production" ? 'none' : 'lax'
-    // domain: '.vercel.app' // REMOVE unless frontend/backend share same root domain
-  }
-}));
-
+app.use(
+  session({
+    store,
+    secret: process.env.SESSION_SECRET,
+    cookie: {
+      secure: true, // HTTPS only
+      sameSite: "none", // Required for cross-origin
+      httpOnly: true,
+    },
+  })
+);
 
 app.use(flash());
 app.use(passport.initialize());
