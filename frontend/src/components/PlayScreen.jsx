@@ -205,55 +205,41 @@ const handleFinishQuiz = async () => {
   setWaitingForOpponent(true);
 
   try {
-    // 1. Submit results with timeout
+    // Submit results (POST)
     await axios.post(`${baseUrl}/api/submit-results`, {
       roomId,
       username: currentUsername,
       score: myScore,
       totalTime: totalCorrectTime.current
-    }, { timeout: 5000 });
+    });
 
-    // 2. Enhanced polling configuration
-    const POLL_INTERVAL = 3000;
-    const MAX_ATTEMPTS = 20;
+    // Start polling
+    const POLL_INTERVAL = 3000; // 3 seconds
+    const MAX_ATTEMPTS = 20; // 60 seconds total
     let attempts = 0;
     let pollTimer;
 
     const pollResults = async () => {
       try {
         attempts++;
-        const response = await axios.post(`${baseUrl}/api/check-results`, 
-          { roomId },
-          {
-            timeout: 4000,
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept-Encoding': 'gzip' // Force simpler compression
-            }
-          }
-        );
+        const response = await axios.post(`${baseUrl}/api/check-results`, { roomId });
+        
+        console.log('Poll attempt:', attempts, 'Response:', response.data);
 
-        // Debugging log
-        console.log('Poll response:', {
-          status: response.status,
-          data: response.data,
-          attempts
-        });
-
-        // Handle different response cases
-        if (response.data?.player1 && response.data?.player2) {
+        // Handle response
+        if (response.data.status === "complete") {
           clearTimeout(pollTimer);
-          sessionStorage.setItem('quizResults', JSON.stringify(response.data));
-          navigate('/result', { state: response.data });
+          sessionStorage.setItem('quizResults', JSON.stringify(response.data.data));
+          navigate('/result', { state: response.data.data });
         } else if (attempts >= MAX_ATTEMPTS) {
-          throw new Error('Results not available after maximum attempts');
+          throw new Error('Opponent did not submit in time');
         } else {
           pollTimer = setTimeout(pollResults, POLL_INTERVAL);
         }
       } catch (err) {
-        console.error("Poll error:", err);
         clearTimeout(pollTimer);
-        toast.error(err.response?.data?.message || err.message);
+        console.error("Polling error:", err);
+        toast.error(err.message);
         navigate('/');
       }
     };
@@ -266,7 +252,7 @@ const handleFinishQuiz = async () => {
 
   } catch (err) {
     console.error("Submission error:", err);
-    toast.error(err.response?.data?.message || "Submission failed");
+    toast.error("Failed to submit results");
     setWaitingForOpponent(false);
   }
 };
