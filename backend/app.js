@@ -181,6 +181,8 @@ app.use(
       secure: true, 
       sameSite: "none", 
       httpOnly: true,
+         domain: "gamerily.onrender.com", 
+         maxAge:1000 * 60 * 60 * 24,
     },
   })
 );
