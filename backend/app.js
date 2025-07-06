@@ -117,7 +117,7 @@ io.on("connection", (socket) => {
     socket.to(roomId).emit("opponentCompleted", { username, score });
 
     const players = rooms[roomId].players;
-    if (players.every(p => completedPlayers[roomId][p.username] !== undefined)) {
+   if (players.every(p => completedPlayers[roomId][p.username] !== undefined)) {
       const [p1, p2] = players;
       const p1Data = completedPlayers[roomId][p1.username];
       const p2Data = completedPlayers[roomId][p2.username];
@@ -127,14 +127,21 @@ io.on("connection", (socket) => {
       else if (p2Data.score > p1Data.score) winner = p2.username;
       else winner = p1Data.totalTime < p2Data.totalTime ? p1.username : p2.username;
 
-      io.to(roomId).emit("finalResults", {
+      const resultPayload = {
         player1: { username: p1.username, ...p1Data },
         player2: { username: p2.username, ...p2Data },
         winner
-      });
+      };
 
-      delete completedPlayers[roomId];
-      setTimeout(() => delete rooms[roomId], 30000);
+      finalizedResults[roomId] = resultPayload;
+
+      io.to(roomId).emit("finalResults", resultPayload);
+
+      setTimeout(() => {
+        delete finalizedResults[roomId];
+        delete completedPlayers[roomId];
+        delete rooms[roomId];
+      }, 120000);
     }
   });
 

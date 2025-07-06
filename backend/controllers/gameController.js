@@ -21,8 +21,13 @@ exports.submitResults = (req, res) => {
 // Check if both players submitted
 exports.checkResults = (req, res) => {
   const { roomId } = req.body;
+
+  if (finalizedResults[roomId]) {
+    return res.json(finalizedResults[roomId]);
+  }
+
   if (!rooms[roomId] || !completedPlayers[roomId]) {
-    return res.status(404).json({ error: "Room not found" }); // Changed from { waiting: true }
+    return res.status(404).json({ error: "Room not found" });
   }
 
   const [p1, p2] = rooms[roomId].players;
@@ -33,21 +38,7 @@ exports.checkResults = (req, res) => {
     return res.json({ waiting: true });
   }
 
-  // Calculate winner
-  let winner;
-  if (p1Data.score > p2Data.score) winner = p1.username;
-  else if (p2Data.score > p1Data.score) winner = p2.username;
-  else winner = p1Data.totalTime < p2Data.totalTime ? p1.username : p2.username;
-
-  // Immediately clean up (no setTimeout)
-  delete completedPlayers[roomId];
-  delete rooms[roomId];
-
-  return res.json({
-    player1: { username: p1.username, ...p1Data },
-    player2: { username: p2.username, ...p2Data },
-    winner
-  });
+  return res.json({ waiting: true }); // Wait until result is finalized
 };
 // Genres
 exports.getGenres = (req, res) => {
