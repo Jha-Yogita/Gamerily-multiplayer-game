@@ -25,7 +25,12 @@ exports.submitResults = (req, res) => {
 exports.checkResults = (req, res) => {
   const { roomId } = req.body;
   
-  // Validate room exists
+  // 1. First check finalized results
+  if (finalizedResults[roomId]) {
+    return res.json(finalizedResults[roomId]);
+  }
+
+  // 2. Check if room exists
   if (!rooms[roomId] || !completedPlayers[roomId]) {
     return res.status(404).json({ error: "Room not found" });
   }
@@ -34,26 +39,29 @@ exports.checkResults = (req, res) => {
   const p1Data = completedPlayers[roomId][p1.username];
   const p2Data = completedPlayers[roomId][p2.username];
 
-  // Check if both players submitted
+  // 3. Check if both submitted
   if (!p1Data || !p2Data) {
     return res.json({ waiting: true });
   }
 
-  // Calculate winner
+  // 4. Calculate winner
   const winner = p1Data.score > p2Data.score ? p1.username :
                 p2Data.score > p1Data.score ? p2.username :
                 p1Data.totalTime < p2Data.totalTime ? p1.username : p2.username;
 
-  // Prepare final result
+  // 5. Prepare final result
   const result = {
     player1: { username: p1.username, ...p1Data },
     player2: { username: p2.username, ...p2Data },
     winner
   };
 
-  // Clean up immediately
-  delete completedPlayers[roomId];
+  // 6. Store finalized result BEFORE cleanup
+  finalizedResults[roomId] = result;
+
+  // 7. Clean up (but keep finalizedResults)
   delete rooms[roomId];
+  delete completedPlayers[roomId];
 
   return res.json(result);
 };

@@ -202,10 +202,12 @@ const handleFinishQuiz = async () => {
     return;
   }
 
+  
+
   setWaitingForOpponent(true);
 
   try {
-    // 1. Submit results first
+    // 1. Submit results
     await axios.post(`${baseUrl}/api/submit-results`, {
       roomId,
       username: currentUsername,
@@ -213,33 +215,43 @@ const handleFinishQuiz = async () => {
       totalTime: totalCorrectTime.current
     });
 
-    // 2. Start polling with your working implementation
+    // 2. Start polling
     const pollInterval = setInterval(async () => {
       try {
         const response = await axios.post(`${baseUrl}/api/check-results`, { roomId });
         
-        if (response.data.player1 && response.data.player2) {
+        // Handle both response formats
+        if (response.data.player1 || response.data?.player1) {
           clearInterval(pollInterval);
           clearTimeout(pollingTimeout);
-          sessionStorage.setItem('quizResults', JSON.stringify(response.data));
-          navigate('/result', { state: response.data });
+          
+          const results = response.data.player1 ? response.data : {
+            player1: response.data.player1,
+            player2: response.data.player2,
+            winner: response.data.winner
+          };
+          
+          sessionStorage.setItem('quizResults', JSON.stringify(results));
+          navigate('/result', { state: results });
+        }
+        else if (response.data.error) {
+          throw new Error(response.data.error);
         }
       } catch (err) {
         clearInterval(pollInterval);
         clearTimeout(pollingTimeout);
-        toast.error("Failed to fetch results.");
+        toast.error(err.message || "Failed to get results");
         navigate('/');
       }
     }, 2000);
 
-    // 3. Set timeout as you had it
+    // 3. Timeout after 30 seconds
     const pollingTimeout = setTimeout(() => {
       clearInterval(pollInterval);
-      toast.error("Opponent took too long to respond.");
+      toast.error("Opponent took too long to respond");
       navigate('/');
     }, 30000);
 
-    // Cleanup on component unmount
     return () => {
       clearInterval(pollInterval);
       clearTimeout(pollingTimeout);
@@ -247,8 +259,7 @@ const handleFinishQuiz = async () => {
 
   } catch (err) {
     setWaitingForOpponent(false);
-    toast.error("Failed to submit results");
-    console.error("Submission error:", err);
+    toast.error(err.response?.data?.error || "Submission failed");
   }
 };
 
