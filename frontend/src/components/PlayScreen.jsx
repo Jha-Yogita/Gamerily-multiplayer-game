@@ -191,12 +191,19 @@ const PlayScreen = () => {
           const data = response.data;
 
           if (data.player1 && data.player2 && data.winner) {
-            clearInterval(pollIntervalIdRef.current);
-            clearTimeout(pollingTimeoutIdRef.current);
-            const formatted = { ...data, solo: false };
-            sessionStorage.setItem('quizResults', JSON.stringify(formatted));
-            navigate('/result', { state: formatted });
-          }
+  console.log("✅ Got final result, navigating to /result", data);
+  clearInterval(pollIntervalIdRef.current);
+  clearTimeout(pollingTimeoutIdRef.current);
+
+  const formatted = { ...data, solo: false };
+
+  // Always update sessionStorage
+  sessionStorage.setItem('quizResults', JSON.stringify(formatted));
+
+  // 🔥 FIX: Force navigation even if already on "/result"
+  navigate('/result?refresh=' + Date.now(), { state: formatted, replace: true });
+}
+
         } catch (err) {
           clearInterval(pollIntervalIdRef.current);
           clearTimeout(pollingTimeoutIdRef.current);

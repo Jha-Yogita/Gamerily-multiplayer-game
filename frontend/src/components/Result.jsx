@@ -8,23 +8,21 @@ const Result = () => {
   const [results, setResults] = useState(null);
 
   useEffect(() => {
-    const loadResults = () => {
-      if (location.state) {
-        const processed = processResults(location.state);
-        setResults(processed);
-        sessionStorage.setItem('quizResults', JSON.stringify(processed));
-        return;
-      }
+  const loadResults = () => {
+    let data = location.state || JSON.parse(sessionStorage.getItem('quizResults') || 'null');
 
-      const saved = sessionStorage.getItem('quizResults');
-      if (saved) {
-        setResults(JSON.parse(saved));
-      } else {
-        setTimeout(() => navigate('/'), 100);
-      }
-    };
-    loadResults();
-  }, [location.state, navigate]);
+    if (!data) {
+      navigate('/', { replace: true });
+      return;
+    }
+
+    const processed = processResults(data);
+    setResults(processed);
+    sessionStorage.setItem('quizResults', JSON.stringify(processed));
+  };
+
+  loadResults();
+}, [location.state, navigate]);
 
   const processResults = (data) => {
     const isSolo = data.solo === true;
