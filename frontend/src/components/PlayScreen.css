@@ -329,3 +329,8 @@
   color: white;
   min-width: 200px;
 }
+.play-button.primary {
+  background: linear-gradient(135deg, #6e45e2, #88d3ce) !important;
+  color: white !important;
+}
+
