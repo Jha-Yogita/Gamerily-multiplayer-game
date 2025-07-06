@@ -128,7 +128,6 @@
   margin-bottom: 1.5rem;
 }
 
-/* Room Creation Styles */
 .room-panel {
   background: rgba(30, 41, 59, 0.9);
   border-radius: 16px;
@@ -189,7 +188,6 @@
   opacity: 1;
 }
 
-/* Responsive Design */
 @media (max-width: 768px) {
   .mode-options {
     flex-direction: column;

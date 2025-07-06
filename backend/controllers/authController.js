@@ -19,7 +19,7 @@ exports.signup = async (req, res, next) => {
             user: { 
               _id: user._id, 
               username: user.username,
-              email: user.email  // Include email to match frontend expectations
+              email: user.email  
             },
             sessionId: req.sessionID
           });

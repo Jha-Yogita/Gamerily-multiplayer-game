@@ -10,7 +10,7 @@ const playerSchema = new mongoose.Schema({
 const roomSchema = new mongoose.Schema({
   roomId: { type: String, required: true, unique: true },
   players: [playerSchema],
-  createdAt: { type: Date, default: Date.now, expires: 3600 }, // Auto-delete after 1 hour
+  createdAt: { type: Date, default: Date.now, expires: 3600 }, 
 });
 
 module.exports = mongoose.model('Room', roomSchema);

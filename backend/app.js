@@ -150,7 +150,7 @@ socket.on("submitResults", async ({ roomId, username, score, totalTime }) => {
 
     finalizedResults[roomId] = resultPayload;
 
-    // Save result to MongoDB
+  
     try {
       console.log(`[submitResults] Saving result to DB for room ${roomId}`);
       const saved = await Result.create({
@@ -175,7 +175,7 @@ socket.on("submitResults", async ({ roomId, username, score, totalTime }) => {
 });
 
 
-// Emit final results to players
+
   socket.on("disconnect", () => {
     Object.entries(rooms).forEach(([roomId, room]) => {
       const playerIndex = room.players.findIndex(p => p.id === socket.id);
@@ -235,19 +235,17 @@ passport.use(new LocalStrategy(User.authenticate()));
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
-// Routes
+
 app.use("/auth", authRoutes);
 app.use("/api", gameRoutes);
 app.use("/user", userRoutes);
 app.use("/notify", notifyRoutes);
 
-// Error Handling
 app.use((err, req, res, next) => {
   const { status = 500, message = "Internal Server Error" } = err;
   res.status(status).json({ error: message });
 });
 
-// Server
 const PORT = process.env.PORT;
 server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
