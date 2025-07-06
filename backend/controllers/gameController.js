@@ -3,54 +3,59 @@ const { rooms, completedPlayers,finalizedResults } = require("../state");
 const Result = require("../models/Result");
 
 
-exports.submitResults = async (req, res) => {  // Make this async
+exports.submitResults = async (req, res) => {
   const { roomId, username, score, totalTime } = req.body;
-  
-  // Input validation
-  if (!roomId || !username || score === undefined || totalTime === undefined) {
-    return res.status(400).json({ error: "Missing required fields" });
-  }
 
   try {
-    // 1. Save to memory
+    // 1. Store submission
     if (!completedPlayers[roomId]) completedPlayers[roomId] = {};
     completedPlayers[roomId][username] = { score, totalTime };
 
-    // 2. Check if both players submitted
+    // 2. Check if both submitted (MUST verify room exists)
     const room = rooms[roomId];
     if (room && room.players.every(p => completedPlayers[roomId]?.[p.username])) {
       const [p1, p2] = room.players;
       const p1Data = completedPlayers[roomId][p1.username];
       const p2Data = completedPlayers[roomId][p2.username];
 
-      // Calculate winner
-      let winner;
-      if (p1Data.score > p2Data.score) winner = p1.username;
-      else if (p2Data.score > p1Data.score) winner = p2.username;
-      else winner = p1Data.totalTime < p2Data.totalTime ? p1.username : p2.username;
+      // 3. Calculate winner (ADD NULL CHECKS)
+      const winner = calculateWinner(p1, p1Data, p2, p2Data);
 
-      // Create final payload
+      // 4. Create and save results (ATOMIC OPERATION)
       const resultPayload = {
-        player1: { username: p1.username, ...p1Data },
-        player2: { username: p2.username, ...p2Data },
+        player1: { username: p1.username, score: p1Data?.score || 0, totalTime: p1Data?.totalTime || 0 },
+        player2: { username: p2.username, score: p2Data?.score || 0, totalTime: p2Data?.totalTime || 0 },
         winner
       };
 
-      // 3. Save to database
-      await Result.create(resultPayload);
-      
-      // 4. Store in memory cache
-      finalizedResults[roomId] = resultPayload;
+      // 5. Save to DB and cache IN ORDER
+      const dbResult = await Result.create(resultPayload);
+      finalizedResults[roomId] = dbResult.toObject();
 
-      return res.json({ status: "complete", data: resultPayload });
+      return res.json({ status: "complete", data: dbResult.toObject() });
     }
 
-    res.json({ status: "pending" });
+    res.json({ status: "pending", progress: getProgress(roomId) });
   } catch (err) {
     console.error("Submission error:", err);
-    res.status(500).json({ error: "Failed to process results" });
+    res.status(500).json({ error: "Results processing failed" });
   }
 };
+
+// Helper functions
+function calculateWinner(p1, p1Data, p2, p2Data) {
+  if (!p1Data || !p2Data) return null;
+  if (p1Data.score > p2Data.score) return p1.username;
+  if (p2Data.score > p1Data.score) return p2.username;
+  return p1Data.totalTime < p2Data.totalTime ? p1.username : p2.username;
+}
+
+function getProgress(roomId) {
+  const room = rooms[roomId];
+  if (!room) return "Room not found";
+  const submitted = room.players.filter(p => completedPlayers[roomId]?.[p.username]).length;
+  return `${submitted}/${room.players.length} players submitted`;
+}
 
 exports.checkResults = async (req, res) => {
   const { roomId } = req.body;
