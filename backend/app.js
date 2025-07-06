@@ -174,7 +174,9 @@ store.on("error",()=> {
 app.use(
   session({
     store,
+    resave: false,
     secret: process.env.SESSION_SECRET,
+    saveUninitialized: false,
     cookie: {
       secure: true, 
       sameSite: "none", 

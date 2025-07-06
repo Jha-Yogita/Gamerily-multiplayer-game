@@ -46,6 +46,7 @@ function App() {
   
  const handleSignupSuccess = async () => {
   try {
+    await new Promise(resolve => setTimeout(resolve, 500)); 
     const res = await axios.get(`${baseUrl}/auth/current_user`, { withCredentials: true });
     setUser(res.data.user);
     localStorage.setItem('user', JSON.stringify(res.data.user));
@@ -53,6 +54,7 @@ function App() {
     console.error("Error fetching user:", err);
   }
 };
+
 
   
   const handleLogoutSuccess = () => {

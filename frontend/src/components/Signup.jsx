@@ -18,14 +18,12 @@ function Signup({ onSignupSuccess }) {
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
-
- const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
   e.preventDefault();
   setError("");
   setIsLoading(true);
 
   try {
-    // 1. Sign up user
     const res = await axios.post(
       `${baseUrl}/auth/signup`,
       form,
@@ -33,11 +31,16 @@ function Signup({ onSignupSuccess }) {
     );
 
     console.log("Signup Response:", res.data);
-    
-    
+
     if (res.data.success) {
       localStorage.setItem("user", JSON.stringify(res.data.user));
-      onSignupSuccess();
+      
+    
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+    
+      await onSignupSuccess();  
+
       toast.success("Welcome to Gamerily");
       navigate("/");
     } else {
@@ -50,6 +53,10 @@ function Signup({ onSignupSuccess }) {
     setIsLoading(false);
   }
 };
+
+ 
+ 
+ 
   useEffect(() => {
     const script = document.createElement("script");
     script.src = "https://cdn.jsdelivr.net/npm/particles.js";
