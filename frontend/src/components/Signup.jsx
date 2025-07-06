@@ -40,6 +40,7 @@ function Signup({ onSignupSuccess }) {
 
     
       await onSignupSuccess();  
+      document.cookie.split(";").forEach(c => console.log(c));
 
       toast.success("Welcome to Gamerily");
       navigate("/");
