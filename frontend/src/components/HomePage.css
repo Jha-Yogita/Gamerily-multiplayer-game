@@ -1,3 +1,4 @@
+/* General Page Styling */
 .home-container {
   font-family: 'Orbitron', sans-serif;
   background-color: #121212;
@@ -5,6 +6,7 @@
   min-height: 100vh;
 }
 
+/* Hero Section */
 .hero-section {
   background-image:
     linear-gradient(rgba(18, 18, 18, 0.85), rgba(18, 18, 18, 0.85)),
@@ -46,6 +48,16 @@
   color: #ddd;
 }
 
+/* Typewriter Section */
+.typewriter-container {
+  font-size: 1.2rem;
+  margin-bottom: 40px;
+  color: #ccc;
+  min-height: 60px;
+  text-align: center;
+  padding: 0 10px;
+}
+
 /* Genre Section */
 .genre-section {
   max-width: 1200px;
@@ -54,34 +66,27 @@
   text-align: center;
 }
 
-.typewriter-container {
-  font-size: 1.2rem;
-  margin-bottom: 40px;
-  color: #ccc;
-  min-height: 60px;
-}
-
 .genre-grid {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 25px;
   margin-bottom: 40px;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  padding: 0 10px;
 }
 
 .genre-card {
   background: #1f1f1f;
   border-radius: 12px;
   overflow: hidden;
+  transition: all 0.3s ease;
   border-top: 4px solid var(--genre-color);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
-  transition: all 0.3s ease;
+  height: 100%;
 }
 
 .genre-card:hover {
-  transform: translateY(-6px);
+  transform: translateY(-8px);
   box-shadow: 0 8px 25px rgba(97, 218, 251, 0.3);
 }
 
@@ -89,6 +94,7 @@
   padding: 20px;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   height: 100%;
 }
 
@@ -101,15 +107,15 @@
 .genre-description {
   color: #aaa;
   font-size: 0.95rem;
-  line-height: 1.4;
   margin-bottom: 15px;
+  flex-grow: 1;
 }
 
 .genre-media {
-  height: 160px;
+  height: 180px;
+  margin-bottom: 15px;
   border-radius: 8px;
   overflow: hidden;
-  margin-bottom: 15px;
 }
 
 .genre-video {
@@ -119,90 +125,19 @@
 }
 
 .genre-btn-container {
-  margin-top: auto;
   text-align: center;
 }
 
 .genre-play-btn {
   display: inline-block;
-  padding: 10px 20px;
+  padding: 10px 25px;
   background: var(--genre-color);
   color: #121212;
   border-radius: 25px;
   font-weight: 600;
   transition: all 0.3s ease;
-}
-
-.genre-play-btn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 0 10px var(--genre-color);
-}
-
-@media (max-width: 768px) {
-  .genre-media {
-    height: 140px;
-  }
-
-  .genre-title {
-    font-size: 1.2rem;
-  }
-
-  .genre-description {
-    font-size: 0.9rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .genre-grid {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-
-  .genre-media {
-    height: 130px;
-  }
-}
-
-
-.genre-title {
-  font-size: 1.5rem; 
-  color: var(--genre-color);
-  margin-bottom: 12px;
-}
-
-.genre-description {
-  color: #aaa;
-  margin-bottom: auto;
-  line-height: 1.4;
-  font-size: 0.95rem; 
-}
-
-.genre-media {
-  height: 45%; 
-  margin-bottom: 15px;
-  border-radius: 8px;
-  overflow: hidden;
-  position: relative;
-}
-
-.genre-video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-}
-
-.genre-play-btn {
-  display: inline-block;
-  padding: 10px 25px; 
-  background: var(--genre-color);
-  color: #121212;
-  border-radius: 25px;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  margin-top: 15px; 
-  align-self: center; 
-  width: fit-content; 
+  width: fit-content;
+  margin: 0 auto;
 }
 
 .genre-play-btn:hover {
@@ -210,18 +145,43 @@
   box-shadow: 0 0 15px var(--genre-color);
 }
 
-@media (max-width: 768px) {
-  .genre-card {
-    aspect-ratio: auto; 
-    height: auto;
-  }
-  
-  .genre-media {
-    height: 180px; 
-  }
+/* CTA Buttons */
+.cta-button {
+  display: inline-block;
+  padding: 12px 30px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #121212;
+  background: #61dafb;
+  border-radius: 30px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 3px 8px rgba(97, 218, 251, 0.5);
+  margin: 10px;
 }
 
+.cta-button:hover {
+  background: #52b0e7;
+  transform: scale(1.05);
+  box-shadow: 0 5px 15px rgba(97, 218, 251, 0.7);
+}
 
+.main-cta {
+  background: linear-gradient(90deg, #61dafb, #52b0e7);
+  font-size: 1.2rem;
+  padding: 15px 35px;
+}
+
+.explore-btn {
+  background: #8338ec;
+  color: white;
+}
+
+.explore-btn:hover {
+  background: #6a2fc1;
+}
+
+/* Info Section */
 .info-section {
   background: linear-gradient(135deg, #2a5d7c, #1c3e50);
   padding: 60px 20px;
@@ -249,7 +209,7 @@
 
 .feature-highlights {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 30px;
   margin-bottom: 40px;
 }
@@ -282,82 +242,60 @@
   color: #ccc;
 }
 
-
-.cta-button {
-  display: inline-block;
-  padding: 12px 30px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #121212;
-  background: #61dafb;
-  border-radius: 30px;
-  text-decoration: none;
-  transition: all 0.3s ease;
-  box-shadow: 0 3px 8px rgba(97, 218, 251, 0.5);
-  margin: 10px;
-}
-
-.cta-button:hover {
-  background: #52b0e7;
-  transform: scale(1.05);
-  box-shadow: 0 5px 15px rgba(97, 218, 251, 0.7);
-}
-
-.main-cta {
-  background: linear-gradient(90deg, #61dafb, #52b0e7);
-  font-size: 1.2rem;
-  padding: 15px 35px;
-}
-
-.explore-btn {
-  background: #8338ec;
-}
-
-.explore-btn:hover {
-  background: #6a2fc1;
-}
-
+/* Media Queries */
 @media (max-width: 768px) {
   .hero-title {
     font-size: 2.5rem;
   }
-  
+
   .hero-subtitle {
     font-size: 1.2rem;
   }
-  
+
   .genre-grid {
     grid-template-columns: 1fr;
   }
+
+  .genre-media {
+    height: 160px;
+  }
+
+  .typewriter-container {
+    font-size: 1rem;
+  }
+
+  .info-title {
+    font-size: 2rem;
+  }
+
+  .info-text {
+    font-size: 1rem;
+  }
 }
 
+@media (max-width: 480px) {
+  .hero-title {
+    font-size: 2rem;
+  }
 
-.genre-grid.three-col {
-  grid-template-columns: repeat(3, 1fr);
-  max-width: 1000px;
-  margin: 0 auto;
-}
+  .hero-subtitle {
+    font-size: 1rem;
+  }
 
-.genre-card-content {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
+  .cta-button {
+    font-size: 1rem;
+    padding: 10px 20px;
+  }
 
-.genre-btn-container {
-  margin-top: auto;
-  padding-top: 15px;
-  text-align: center;
-}
+  .main-cta {
+    padding: 12px 28px;
+  }
 
-.genre-play-btn {
-  display: inline-block;
-  padding: 8px 20px;
-  background: var(--genre-color);
-  color: #121212;
-  border-radius: 20px;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  width: fit-content;
-  margin: 0 auto;
+  .genre-title {
+    font-size: 1.1rem;
+  }
+
+  .genre-description {
+    font-size: 0.85rem;
+  }
 }
