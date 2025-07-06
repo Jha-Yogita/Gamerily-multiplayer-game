@@ -1,291 +1,101 @@
-.home-container {
-  font-family: 'Orbitron', sans-serif;
-  background-color: #121212;
-  color: #eee;
-  min-height: 100vh;
-}
-
-.hero-section {
-  background-image:
-    linear-gradient(rgba(18, 18, 18, 0.85), rgba(18, 18, 18, 0.85)),
-    url("https://images.unsplash.com/photo-1537963447914-dbc04b81de27?q=80&w=2012&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D");
-  background-size: cover;
-  background-position: center;
-  height: 60vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 0 20px;
-  margin-bottom: 40px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7);
-  transition: all 0.3s ease;
-}
-
-.hero-section:hover {
-  transform: scale(1.01);
-  filter: brightness(1.1);
-}
-
-.hero-content {
-  max-width: 800px;
-}
-
-.hero-title {
-  font-size: 3.5rem;
-  margin-bottom: 20px;
-  background: linear-gradient(90deg, #61dafb, #52b0e7);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 0 0 10px rgba(97, 218, 251, 0.3);
-}
-
-.hero-subtitle {
-  font-size: 1.5rem;
-  line-height: 1.4;
-  color: #ddd;
-}
-
-/* Genre Section */
-.genre-section {
-  max-width: 1200px;
-  margin: 0 auto 60px;
-  padding: 0 20px;
-  text-align: center;
-}
-
-.typewriter-container {
-  font-size: 1.2rem;
-  margin-bottom: 40px;
-  color: #ccc;
-  min-height: 60px;
-}
-
 .genre-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 25px;
   margin-bottom: 40px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  padding: 0 10px;
 }
 
 .genre-card {
   background: #1f1f1f;
   border-radius: 12px;
   overflow: hidden;
-  transition: all 0.3s ease;
-  border-top: 3px solid var(--genre-color);
+  border-top: 4px solid var(--genre-color);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-  aspect-ratio: 1/1; 
   display: flex;
-  flex-direction: column; 
+  flex-direction: column;
+  transition: all 0.3s ease;
 }
 
 .genre-card:hover {
-  transform: translateY(-8px);
+  transform: translateY(-6px);
   box-shadow: 0 8px 25px rgba(97, 218, 251, 0.3);
 }
 
 .genre-card-content {
   padding: 20px;
-  height: 100%; 
-  display: flex; 
-  flex-direction: column; 
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .genre-title {
-  font-size: 1.5rem; 
+  font-size: 1.4rem;
   color: var(--genre-color);
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .genre-description {
   color: #aaa;
-  margin-bottom: auto;
+  font-size: 0.95rem;
   line-height: 1.4;
-  font-size: 0.95rem; 
+  margin-bottom: 15px;
 }
 
 .genre-media {
-  height: 45%; 
-  margin-bottom: 15px;
+  height: 160px;
   border-radius: 8px;
   overflow: hidden;
-  position: relative;
+  margin-bottom: 15px;
 }
 
 .genre-video {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center;
+}
+
+.genre-btn-container {
+  margin-top: auto;
+  text-align: center;
 }
 
 .genre-play-btn {
   display: inline-block;
-  padding: 10px 25px; 
+  padding: 10px 20px;
   background: var(--genre-color);
   color: #121212;
   border-radius: 25px;
   font-weight: 600;
   transition: all 0.3s ease;
-  margin-top: 15px; 
-  align-self: center; 
-  width: fit-content; 
 }
 
 .genre-play-btn:hover {
   transform: scale(1.05);
-  box-shadow: 0 0 15px var(--genre-color);
+  box-shadow: 0 0 10px var(--genre-color);
 }
 
 @media (max-width: 768px) {
-  .genre-card {
-    aspect-ratio: auto; 
-    height: auto;
-  }
-  
   .genre-media {
-    height: 180px; 
+    height: 140px;
   }
-}
 
-
-.info-section {
-  background: linear-gradient(135deg, #2a5d7c, #1c3e50);
-  padding: 60px 20px;
-  text-align: center;
-}
-
-.info-content {
-  max-width: 1000px;
-  margin: 0 auto;
-}
-
-.info-title {
-  font-size: 2.5rem;
-  margin-bottom: 20px;
-  color: #61dafb;
-}
-
-.info-text {
-  font-size: 1.2rem;
-  line-height: 1.6;
-  max-width: 800px;
-  margin: 0 auto 40px;
-  color: #eee;
-}
-
-.feature-highlights {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 30px;
-  margin-bottom: 40px;
-}
-
-.feature {
-  background: rgba(255, 255, 255, 0.1);
-  padding: 25px;
-  border-radius: 10px;
-  transition: all 0.3s ease;
-}
-
-.feature:hover {
-  transform: translateY(-5px);
-  background: rgba(255, 255, 255, 0.15);
-}
-
-.feature-icon {
-  font-size: 2.5rem;
-  margin-bottom: 15px;
-  display: inline-block;
-}
-
-.feature h4 {
-  font-size: 1.3rem;
-  margin-bottom: 10px;
-  color: #61dafb;
-}
-
-.feature p {
-  color: #ccc;
-}
-
-
-.cta-button {
-  display: inline-block;
-  padding: 12px 30px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #121212;
-  background: #61dafb;
-  border-radius: 30px;
-  text-decoration: none;
-  transition: all 0.3s ease;
-  box-shadow: 0 3px 8px rgba(97, 218, 251, 0.5);
-  margin: 10px;
-}
-
-.cta-button:hover {
-  background: #52b0e7;
-  transform: scale(1.05);
-  box-shadow: 0 5px 15px rgba(97, 218, 251, 0.7);
-}
-
-.main-cta {
-  background: linear-gradient(90deg, #61dafb, #52b0e7);
-  font-size: 1.2rem;
-  padding: 15px 35px;
-}
-
-.explore-btn {
-  background: #8338ec;
-}
-
-.explore-btn:hover {
-  background: #6a2fc1;
-}
-
-@media (max-width: 768px) {
-  .hero-title {
-    font-size: 2.5rem;
-  }
-  
-  .hero-subtitle {
+  .genre-title {
     font-size: 1.2rem;
   }
-  
-  .genre-grid {
-    grid-template-columns: 1fr;
+
+  .genre-description {
+    font-size: 0.9rem;
   }
 }
 
+@media (max-width: 480px) {
+  .genre-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
 
-.genre-grid.three-col {
-  grid-template-columns: repeat(3, 1fr);
-  max-width: 1000px;
-  margin: 0 auto;
-}
-
-.genre-card-content {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.genre-btn-container {
-  margin-top: auto;
-  padding-top: 15px;
-  text-align: center;
-}
-
-.genre-play-btn {
-  display: inline-block;
-  padding: 8px 20px;
-  background: var(--genre-color);
-  color: #121212;
-  border-radius: 20px;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  width: fit-content;
-  margin: 0 auto;
+  .genre-media {
+    height: 130px;
+  }
 }
