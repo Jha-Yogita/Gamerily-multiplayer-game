@@ -1,7 +1,7 @@
 const Question = require("../data/import.js");
 const { rooms, completedPlayers } = require("../state");
 
-const finalizedResults = {};
+
 
 exports.submitResults = (req, res) => {
   const { roomId, username, score, totalTime } = req.body;
@@ -51,23 +51,19 @@ exports.checkResults = (req, res) => {
     winner = p1Data.totalTime < p2Data.totalTime ? p1.username : p2.username;
   }
 
-  const resultPayload = {
+  delete completedPlayers[roomId];
+  delete rooms[roomId];
+
+
+
+
+  return res.json({
     player1: { username: p1.username, ...p1Data },
     player2: { username: p2.username, ...p2Data },
     winner
-  };
-
-  finalizedResults[roomId] = resultPayload;
-
-  // Cleanup after 2 minutes
-  setTimeout(() => {
-    delete finalizedResults[roomId];
-    delete completedPlayers[roomId];
-    delete rooms[roomId];
-  }, 120000);
-
-  return res.json(resultPayload);
+  });
 };
+
 
 // Genres
 exports.getGenres = (req, res) => {
@@ -90,6 +86,7 @@ exports.getGenres = (req, res) => {
 exports.playGenre = async (req, res) => {
   try {
     const genre = req.params.genre.trim().toUpperCase();
+
     const questions = await Question.aggregate([
       { $match: { category: { $regex: `^${genre}$`, $options: 'i' } } },
       { $sample: { size: 5 } }
