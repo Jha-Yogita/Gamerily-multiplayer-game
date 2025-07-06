@@ -14,6 +14,7 @@ exports.signup = async (req, res, next) => {
         req.session.save(err => {
           if (err) return next(err);
           res.json({
+            sucess:true,
             msg: "Signup & login successful",
             user: { 
               _id: user._id, 

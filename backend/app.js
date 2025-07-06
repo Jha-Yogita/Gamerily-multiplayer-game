@@ -176,8 +176,8 @@ app.use(
     store,
     secret: process.env.SESSION_SECRET,
     cookie: {
-      secure: true, // HTTPS only
-      sameSite: "none", // Required for cross-origin
+      secure: true, 
+      sameSite: "none", 
       httpOnly: true,
     },
   })
