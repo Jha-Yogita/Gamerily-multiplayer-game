@@ -13,7 +13,7 @@ const http = require("http");
 const socketIO = require("socket.io");
 
 
-const { rooms, completedPlayers } = require("./state");
+const { rooms, completedPlayers,finalizedResults } = require("./state");
 const User = require("./models/User");
 
 const authRoutes = require("./routes/authRoutes");
