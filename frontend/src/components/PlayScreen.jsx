@@ -187,60 +187,83 @@ const PlayScreen = () => {
     submitAnswer(isCorrect);
   }, [question, answered, userAns, checkAnswerCorrectness, submitAnswer]);
 
-  const handleFinishQuiz = async () => {
-    if (solo) {
-      const soloResults = {
-        solo: true,
-        player1: {
-          username: currentUsername,
-          score: myScore,
-          totalTime: totalCorrectTime.current
-        }
-      };
-      sessionStorage.setItem('quizResults', JSON.stringify(soloResults));
-      navigate('/result', { state: soloResults });
-      return;
-    }
-
-    setWaitingForOpponent(true);
-
-    try {
-      await axios.post(`${baseUrl}/api/submit-results`, {
-        roomId,
+const handleFinishQuiz = async () => {
+  if (solo) {
+    const soloResults = {
+      solo: true,
+      player1: {
         username: currentUsername,
         score: myScore,
         totalTime: totalCorrectTime.current
-      });
-
-      const pollInterval = setInterval(async () => {
-  try {
-    const response = await axios.post(`${baseUrl}/api/check-results`, { roomId });
-    if (response.data.player1 && response.data.player2) {
-      clearInterval(pollInterval);
-      clearTimeout(pollingTimeout);
-      sessionStorage.setItem('quizResults', JSON.stringify(response.data));
-      navigate('/result', { state: response.data });
-    }
-  } catch (err) {
-    clearInterval(pollInterval);
-    clearTimeout(pollingTimeout);
-    toast.error("Failed to fetch results.");
-    navigate('/');
+      }
+    };
+    sessionStorage.setItem('quizResults', JSON.stringify(soloResults));
+    navigate('/result', { state: soloResults });
+    return;
   }
-}, 2000);
+
+  setWaitingForOpponent(true);
+
+  try {
+    // 1. Submit results first
+    await axios.post(`${baseUrl}/api/submit-results`, {
+      roomId,
+      username: currentUsername,
+      score: myScore,
+      totalTime: totalCorrectTime.current
+    });
+
+    // 2. Configure polling
+    const POLL_INTERVAL = 3000; // 3 seconds
+    const MAX_ATTEMPTS = 20; // 20 attempts = 60 seconds total
+    let attempts = 0;
+    let pollTimer;
+
+    const pollResults = async () => {
+      try {
+        attempts++;
+        const response = await axios.post(`${baseUrl}/api/check-results`, { roomId });
+        
+        // Case 1: Results are ready
+        if (response.data.player1 && response.data.player2) {
+          clearTimeout(pollTimer);
+          sessionStorage.setItem('quizResults', JSON.stringify(response.data));
+          navigate('/result', { state: response.data });
+          return;
+        }
+
+        // Case 2: Continue polling if we have attempts left
+        if (attempts < MAX_ATTEMPTS) {
+          pollTimer = setTimeout(pollResults, POLL_INTERVAL);
+        } else {
+          throw new Error('Opponent took too long to respond');
+        }
+      } catch (err) {
+        console.error("Polling error:", err);
+        clearTimeout(pollTimer);
+        toast.error(err.message);
+        navigate('/');
+      }
+    };
+    
+
+    // Start initial poll
+    pollTimer = setTimeout(pollResults, POLL_INTERVAL);
+
+    // Cleanup function in case component unmounts
+    return () => clearTimeout(pollTimer);
+
+  } catch (err) {
+    console.error("Submission error:", err);
+    toast.error("Failed to submit results");
+    setWaitingForOpponent(false);
+  }
+};
 
 
-const pollingTimeout = setTimeout(() => {
-  clearInterval(pollInterval);
-  toast.error("Opponent took too long to respond.");
-  navigate('/');
-}, 30000);
 
-    } catch (err) {
-      toast.error("Submission failed");
-      setWaitingForOpponent(false);
-    }
-  };
+
+
 
   const handleNextQuestion = () => {
     if (currentIndex + 1 >= questions.length) {

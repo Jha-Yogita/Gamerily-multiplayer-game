@@ -23,28 +23,45 @@ exports.submitResults = (req, res) => {
 
 exports.checkResults = async (req, res) => {
   const { roomId } = req.body;
-  console.log(`[checkResults] Called for roomId=${roomId}`);
-
+  
+  // 1. Check memory cache first
   if (finalizedResults[roomId]) {
-    console.log(`[checkResults] Cache hit for room ${roomId}`);
-    return res.json(finalizedResults[roomId]);
+    return res.json({
+      status: 'complete',
+      data: finalizedResults[roomId]
+    });
   }
 
-  console.log(`[checkResults] Cache miss. Checking MongoDB...`);
+  // 2. Check if both players have submitted (but not yet processed)
+  const room = rooms[roomId];
+  if (room && completedPlayers[roomId]) {
+    const allSubmitted = room.players.every(p => completedPlayers[roomId][p.username]);
+    if (allSubmitted) {
+      return res.json({
+        status: 'processing',
+        message: 'Results being calculated'
+      });
+    }
+  }
+
+  // 3. Check database as last resort
   try {
-    const dbResult = await Result.findOne({ roomId });
+    const dbResult = await Result.findOne({ roomId }).lean();
     if (dbResult) {
-      console.log(`[checkResults] Found result in DB for room ${roomId}`);
-      return res.json(dbResult);
-    } else {
-      console.log(`[checkResults] No result in DB for room ${roomId}`);
+      return res.json({
+        status: 'complete',
+        data: dbResult
+      });
     }
   } catch (err) {
-    console.error(`[checkResults] DB lookup failed:`, err);
-    return res.status(500).json({ error: "DB lookup failed" });
+    console.error('Database error:', err);
   }
 
-  return res.status(404).json({ error: "Room not found" });
+  // 4. Default response
+  return res.json({
+    status: 'pending',
+    message: 'Waiting for opponent'
+  });
 };
 
 
