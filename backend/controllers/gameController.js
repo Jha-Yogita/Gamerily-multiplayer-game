@@ -3,113 +3,60 @@ const { rooms, completedPlayers,finalizedResults } = require("../state");
 const Result = require("../models/Result");
 
 
-exports.submitResults = async (req, res) => {
+exports.submitResults = (req, res) => {
   const { roomId, username, score, totalTime } = req.body;
-
-  try {
-    // Initialize if needed
-    if (!completedPlayers[roomId]) completedPlayers[roomId] = {};
-
-    // Store submission
-    completedPlayers[roomId][username] = { score, totalTime };
-
-    // Check if room exists
-    const room = rooms[roomId];
-    if (!room) {
-      console.error(`Room ${roomId} disappeared`);
-      return res.status(410).json({ error: "Room no longer exists" });
-    }
-
-    // Check if all players submitted
-    const allSubmitted = room.players.every(p => completedPlayers[roomId][p.username]);
-
-    if (allSubmitted) {
-      console.log(`Processing results for ${roomId}`);
-      
-      // Calculate results
-      const [p1, p2] = room.players;
-      const p1Data = completedPlayers[roomId][p1.username];
-      const p2Data = completedPlayers[roomId][p2.username];
-
-      const winner = p1Data.score > p2Data.score ? p1.username :
-                   p2Data.score > p1Data.score ? p2.username :
-                   p1Data.totalTime < p2Data.totalTime ? p1.username : p2.username;
-
-      const resultPayload = {
-        player1: { username: p1.username, ...p1Data },
-        player2: { username: p2.username, ...p2Data },
-        winner
-      };
-
-      // Save to database FIRST
-      const dbResult = await Result.create(resultPayload);
-      
-      // THEN update memory cache
-      finalizedResults[roomId] = dbResult.toObject();
-
-      // FINALLY clean up
-      delete rooms[roomId];
-      delete completedPlayers[roomId];
-
-      return res.json({ status: "complete", data: dbResult.toObject() });
-    }
-
-    res.json({ 
-      status: "pending", 
-      progress: Object.keys(completedPlayers[roomId]).length + "/2" 
-    });
-
-  } catch (err) {
-    console.error("CRITICAL SUBMIT ERROR:", err);
-    res.status(500).json({ 
-      error: "Results processing failed",
-      fatal: true // Frontend should stop polling if sees this
-    });
+  
+  // Basic validation
+  if (!roomId || !username || score === undefined || totalTime === undefined) {
+    return res.status(400).json({ error: "Missing required fields" });
   }
-};
-function getProgress(roomId) {
-  const room = rooms[roomId];
-  if (!room) return "Room not found";
-  const submitted = room.players.filter(p => completedPlayers[roomId]?.[p.username]).length;
-  return `${submitted}/${room.players.length} players submitted`;
-}
 
-exports.checkResults = async (req, res) => {
+  // Check room exists
+  if (!rooms[roomId]) {
+    return res.status(404).json({ error: "Room does not exist" });
+  }
+
+  // Store submission
+  if (!completedPlayers[roomId]) completedPlayers[roomId] = {};
+  completedPlayers[roomId][username] = { score, totalTime };
+
+  return res.json({ success: true });
+};
+exports.checkResults = (req, res) => {
   const { roomId } = req.body;
   
-  // 1. Check memory cache
-  if (finalizedResults[roomId]) {
-    return res.json({ status: "complete", data: finalizedResults[roomId] });
+  // Validate room exists
+  if (!rooms[roomId] || !completedPlayers[roomId]) {
+    return res.status(404).json({ error: "Room not found" });
   }
 
-  // 2. Check database
-  try {
-    const dbResult = await Result.findOne({ roomId }).lean();
-    if (dbResult) {
-      return res.json({ status: "complete", data: dbResult });
-    }
-  } catch (err) {
-    console.error("Database error:", err);
+  const [p1, p2] = rooms[roomId].players;
+  const p1Data = completedPlayers[roomId][p1.username];
+  const p2Data = completedPlayers[roomId][p2.username];
+
+  // Check if both players submitted
+  if (!p1Data || !p2Data) {
+    return res.json({ waiting: true });
   }
 
-  // 3. Check submission progress
-  if (completedPlayers[roomId]) {
-    const room = rooms[roomId];
-    if (room) {
-      const submittedCount = room.players.filter(
-        p => completedPlayers[roomId][p.username]
-      ).length;
-      return res.json({ 
-        status: "pending", 
-        progress: `${submittedCount}/2 players submitted`
-      });
-    }
-  }
+  // Calculate winner
+  const winner = p1Data.score > p2Data.score ? p1.username :
+                p2Data.score > p1Data.score ? p2.username :
+                p1Data.totalTime < p2Data.totalTime ? p1.username : p2.username;
 
-  res.json({ status: "waiting", message: "No submissions yet" });
+  // Prepare final result
+  const result = {
+    player1: { username: p1.username, ...p1Data },
+    player2: { username: p2.username, ...p2Data },
+    winner
+  };
+
+  // Clean up immediately
+  delete completedPlayers[roomId];
+  delete rooms[roomId];
+
+  return res.json(result);
 };
-
-
 
 
 // Genres

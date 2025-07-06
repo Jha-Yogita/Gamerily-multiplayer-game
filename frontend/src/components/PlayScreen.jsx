@@ -204,68 +204,51 @@ const handleFinishQuiz = async () => {
 
   setWaitingForOpponent(true);
 
-  // Enhanced submission with retries
-  setWaitingForOpponent(true);
-
   try {
-    // Submit with 3 retries
-    let lastSubmissionError = null;
-    for (let attempt = 1; attempt <= 3; attempt++) {
+    // 1. Submit results first
+    await axios.post(`${baseUrl}/api/submit-results`, {
+      roomId,
+      username: currentUsername,
+      score: myScore,
+      totalTime: totalCorrectTime.current
+    });
+
+    // 2. Start polling with your working implementation
+    const pollInterval = setInterval(async () => {
       try {
-        await axios.post(`${baseUrl}/api/submit-results`, {
-          roomId,
-          username: currentUsername,
-          score: myScore,
-          totalTime: totalCorrectTime.current
-        }, { timeout: 3000 });
-        lastSubmissionError = null;
-        break;
-      } catch (err) {
-        lastSubmissionError = err;
-        if (attempt < 3) await new Promise(r => setTimeout(r, 1000 * attempt));
-      }
-    }
-
-    if (lastSubmissionError) throw lastSubmissionError;
-
-    // Start polling
-    const POLL_INTERVAL = 3000;
-    const MAX_ATTEMPTS = 20;
-    let attempts = 0;
-
-    const poll = async () => {
-      try {
-        attempts++;
         const response = await axios.post(`${baseUrl}/api/check-results`, { roomId });
         
-        console.log('Poll response:', response.data);
-
-        if (response.data.status === "complete") {
-          sessionStorage.setItem('quizResults', JSON.stringify(response.data.data));
-          navigate('/result', { state: response.data.data });
-        } 
-        else if (response.data.error?.fatal) {
-          throw new Error("Server error - please try again later");
-        }
-        else if (attempts >= MAX_ATTEMPTS) {
-          throw new Error("Timeout waiting for results");
-        }
-        else {
-          setTimeout(poll, POLL_INTERVAL);
+        if (response.data.player1 && response.data.player2) {
+          clearInterval(pollInterval);
+          clearTimeout(pollingTimeout);
+          sessionStorage.setItem('quizResults', JSON.stringify(response.data));
+          navigate('/result', { state: response.data });
         }
       } catch (err) {
-        console.error("Poll error:", err);
-        toast.error(err.response?.data?.error || err.message);
+        clearInterval(pollInterval);
+        clearTimeout(pollingTimeout);
+        toast.error("Failed to fetch results.");
         navigate('/');
       }
+    }, 2000);
+
+    // 3. Set timeout as you had it
+    const pollingTimeout = setTimeout(() => {
+      clearInterval(pollInterval);
+      toast.error("Opponent took too long to respond.");
+      navigate('/');
+    }, 30000);
+
+    // Cleanup on component unmount
+    return () => {
+      clearInterval(pollInterval);
+      clearTimeout(pollingTimeout);
     };
 
-    poll();
-
   } catch (err) {
-    console.error("Submission failed after retries:", err);
-    toast.error(err.response?.data?.error || "Failed to submit results");
     setWaitingForOpponent(false);
+    toast.error("Failed to submit results");
+    console.error("Submission error:", err);
   }
 };
 
