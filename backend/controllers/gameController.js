@@ -6,39 +6,92 @@ const Result = require("../models/Result");
 exports.submitResults = async (req, res) => {
   const { roomId, username, score, totalTime } = req.body;
 
-  try {
-    // 1. Store submission
-    if (!completedPlayers[roomId]) completedPlayers[roomId] = {};
-    completedPlayers[roomId][username] = { score, totalTime };
+  // 1. Enhanced validation
+  if (!roomId || !username || score === undefined || totalTime === undefined) {
+    return res.status(400).json({ 
+      error: "Missing required fields",
+      received: { roomId, username, score, totalTime }
+    });
+  }
 
-    // 2. Check if both submitted (MUST verify room exists)
+  try {
+    // 2. Initialize storage if needed
+    if (!completedPlayers[roomId]) {
+      completedPlayers[roomId] = {};
+    }
+
+    // 3. Store submission with timestamp
+    completedPlayers[roomId][username] = { 
+      score, 
+      totalTime,
+      submittedAt: new Date() 
+    };
+
+    // 4. Verify room exists
     const room = rooms[roomId];
-    if (room && room.players.every(p => completedPlayers[roomId]?.[p.username])) {
+    if (!room) {
+      console.error(`Room ${roomId} not found`);
+      return res.status(404).json({ error: "Room not found" });
+    }
+
+    // 5. Check if all players submitted
+    const allSubmitted = room.players.every(
+      player => completedPlayers[roomId][player.username]
+    );
+
+    if (allSubmitted) {
+      // 6. Process results
       const [p1, p2] = room.players;
       const p1Data = completedPlayers[roomId][p1.username];
       const p2Data = completedPlayers[roomId][p2.username];
 
-      // 3. Calculate winner (ADD NULL CHECKS)
-      const winner = calculateWinner(p1, p1Data, p2, p2Data);
+      // 7. Calculate winner with fallbacks
+      const winner = p1Data.score > p2Data.score ? p1.username :
+                    p2Data.score > p1Data.score ? p2.username :
+                    p1Data.totalTime < p2Data.totalTime ? p1.username : p2.username;
 
-      // 4. Create and save results (ATOMIC OPERATION)
+      // 8. Prepare final result
       const resultPayload = {
-        player1: { username: p1.username, score: p1Data?.score || 0, totalTime: p1Data?.totalTime || 0 },
-        player2: { username: p2.username, score: p2Data?.score || 0, totalTime: p2Data?.totalTime || 0 },
-        winner
+        player1: {
+          username: p1.username,
+          score: p1Data.score,
+          totalTime: p1Data.totalTime
+        },
+        player2: {
+          username: p2.username,
+          score: p2Data.score,
+          totalTime: p2Data.totalTime
+        },
+        winner,
+        calculatedAt: new Date()
       };
 
-      // 5. Save to DB and cache IN ORDER
-      const dbResult = await Result.create(resultPayload);
-      finalizedResults[roomId] = dbResult.toObject();
-
-      return res.json({ status: "complete", data: dbResult.toObject() });
+      // 9. Save to database with error handling
+      try {
+        const dbResult = await Result.create(resultPayload);
+        finalizedResults[roomId] = dbResult.toObject();
+        return res.json({ status: "complete", data: dbResult.toObject() });
+      } catch (dbError) {
+        console.error("Database save failed:", dbError);
+        return res.status(500).json({ error: "Failed to save results" });
+      }
     }
 
-    res.json({ status: "pending", progress: getProgress(roomId) });
+    // 10. Return progress if not all submitted
+    const submittedCount = room.players.filter(
+      p => completedPlayers[roomId][p.username]
+    ).length;
+    res.json({ 
+      status: "pending", 
+      progress: `${submittedCount}/${room.players.length}`
+    });
+
   } catch (err) {
-    console.error("Submission error:", err);
-    res.status(500).json({ error: "Results processing failed" });
+    console.error("Submission processing error:", err);
+    res.status(500).json({ 
+      error: "Internal server error",
+      details: err.message 
+    });
   }
 };
 
