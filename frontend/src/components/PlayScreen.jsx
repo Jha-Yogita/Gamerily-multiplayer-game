@@ -205,57 +205,68 @@ const handleFinishQuiz = async () => {
   setWaitingForOpponent(true);
 
   try {
-    // 1. Submit results first
+    // 1. Submit results with timeout
     await axios.post(`${baseUrl}/api/submit-results`, {
       roomId,
       username: currentUsername,
       score: myScore,
       totalTime: totalCorrectTime.current
-    });
+    }, { timeout: 5000 });
 
-    // 2. Configure polling
-    const POLL_INTERVAL = 3000; // 3 seconds
-    const MAX_ATTEMPTS = 20; // 20 attempts = 60 seconds total
+    // 2. Enhanced polling configuration
+    const POLL_INTERVAL = 3000;
+    const MAX_ATTEMPTS = 20;
     let attempts = 0;
     let pollTimer;
 
     const pollResults = async () => {
       try {
         attempts++;
-        const response = await axios.post(`${baseUrl}/api/check-results`, { roomId });
-        
-        // Case 1: Results are ready
-        if (response.data.player1 && response.data.player2) {
+        const response = await axios.post(`${baseUrl}/api/check-results`, 
+          { roomId },
+          {
+            timeout: 4000,
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept-Encoding': 'gzip' // Force simpler compression
+            }
+          }
+        );
+
+        // Debugging log
+        console.log('Poll response:', {
+          status: response.status,
+          data: response.data,
+          attempts
+        });
+
+        // Handle different response cases
+        if (response.data?.player1 && response.data?.player2) {
           clearTimeout(pollTimer);
           sessionStorage.setItem('quizResults', JSON.stringify(response.data));
           navigate('/result', { state: response.data });
-          return;
-        }
-
-        // Case 2: Continue polling if we have attempts left
-        if (attempts < MAX_ATTEMPTS) {
-          pollTimer = setTimeout(pollResults, POLL_INTERVAL);
+        } else if (attempts >= MAX_ATTEMPTS) {
+          throw new Error('Results not available after maximum attempts');
         } else {
-          throw new Error('Opponent took too long to respond');
+          pollTimer = setTimeout(pollResults, POLL_INTERVAL);
         }
       } catch (err) {
-        console.error("Polling error:", err);
+        console.error("Poll error:", err);
         clearTimeout(pollTimer);
-        toast.error(err.message);
+        toast.error(err.response?.data?.message || err.message);
         navigate('/');
       }
     };
-    
 
-    // Start initial poll
-    pollTimer = setTimeout(pollResults, POLL_INTERVAL);
+    // Start polling
+    pollResults();
 
-    // Cleanup function in case component unmounts
+    // Cleanup
     return () => clearTimeout(pollTimer);
 
   } catch (err) {
     console.error("Submission error:", err);
-    toast.error("Failed to submit results");
+    toast.error(err.response?.data?.message || "Submission failed");
     setWaitingForOpponent(false);
   }
 };
