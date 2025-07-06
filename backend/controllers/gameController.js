@@ -7,92 +7,66 @@ exports.submitResults = async (req, res) => {
   const { roomId, username, score, totalTime } = req.body;
 
   try {
-    // Initialize storage if needed
-    if (!completedPlayers[roomId]) {
-      completedPlayers[roomId] = {};
-    }
+    // Initialize if needed
+    if (!completedPlayers[roomId]) completedPlayers[roomId] = {};
 
-    // Store submission with lock to prevent race conditions
-    completedPlayers[roomId][username] = { 
-      score, 
-      totalTime,
-      submittedAt: new Date() 
-    };
+    // Store submission
+    completedPlayers[roomId][username] = { score, totalTime };
 
-    // Verify room exists with players
+    // Check if room exists
     const room = rooms[roomId];
-    if (!room?.players) {
-      return res.status(404).json({ error: "Room not found" });
+    if (!room) {
+      console.error(`Room ${roomId} disappeared`);
+      return res.status(410).json({ error: "Room no longer exists" });
     }
 
-    // Check if all players submitted (atomic operation)
-    const allPlayersSubmitted = room.players.every(
-      player => completedPlayers[roomId][player.username]
-    );
+    // Check if all players submitted
+    const allSubmitted = room.players.every(p => completedPlayers[roomId][p.username]);
 
-    if (allPlayersSubmitted) {
-      // Process results with transaction-like behavior
+    if (allSubmitted) {
+      console.log(`Processing results for ${roomId}`);
+      
+      // Calculate results
       const [p1, p2] = room.players;
       const p1Data = completedPlayers[roomId][p1.username];
       const p2Data = completedPlayers[roomId][p2.username];
 
-      // Calculate winner with fallbacks
-      const winner = calculateWinner(p1, p1Data, p2, p2Data);
+      const winner = p1Data.score > p2Data.score ? p1.username :
+                   p2Data.score > p1Data.score ? p2.username :
+                   p1Data.totalTime < p2Data.totalTime ? p1.username : p2.username;
 
-      // Prepare final payload
       const resultPayload = {
         player1: { username: p1.username, ...p1Data },
         player2: { username: p2.username, ...p2Data },
-        winner,
-        calculatedAt: new Date()
+        winner
       };
 
-      // Save to database and cache
-      try {
-        const dbResult = await Result.create(resultPayload);
-        finalizedResults[roomId] = dbResult.toObject();
-        
-        // IMPORTANT: Clean up room state
-        delete rooms[roomId];
-        delete completedPlayers[roomId];
-        
-        return res.json({ 
-          status: "complete", 
-          data: dbResult.toObject() 
-        });
-      } catch (dbError) {
-        console.error("Database error:", dbError);
-        return res.status(500).json({ error: "Failed to save results" });
-      }
+      // Save to database FIRST
+      const dbResult = await Result.create(resultPayload);
+      
+      // THEN update memory cache
+      finalizedResults[roomId] = dbResult.toObject();
+
+      // FINALLY clean up
+      delete rooms[roomId];
+      delete completedPlayers[roomId];
+
+      return res.json({ status: "complete", data: dbResult.toObject() });
     }
 
-    // Return current progress
-    const submittedCount = room.players.filter(
-      p => completedPlayers[roomId][p.username]
-    ).length;
-    
     res.json({ 
       status: "pending", 
-      progress: `${submittedCount}/${room.players.length}`
+      progress: Object.keys(completedPlayers[roomId]).length + "/2" 
     });
 
   } catch (err) {
-    console.error("Submission error:", err);
+    console.error("CRITICAL SUBMIT ERROR:", err);
     res.status(500).json({ 
-      error: "Internal server error",
-      details: err.message 
+      error: "Results processing failed",
+      fatal: true // Frontend should stop polling if sees this
     });
   }
 };
-
-// Helper functions
-function calculateWinner(p1, p1Data, p2, p2Data) {
-  if (!p1Data || !p2Data) return null;
-  if (p1Data.score > p2Data.score) return p1.username;
-  if (p2Data.score > p1Data.score) return p2.username;
-  return p1Data.totalTime < p2Data.totalTime ? p1.username : p2.username;
-}
-
 function getProgress(roomId) {
   const room = rooms[roomId];
   if (!room) return "Room not found";
