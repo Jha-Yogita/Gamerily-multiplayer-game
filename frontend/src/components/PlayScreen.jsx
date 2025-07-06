@@ -286,14 +286,24 @@ const PlayScreen = () => {
             />
             {feedback && <div className={`feedback ${feedbackType}`}>{feedback}</div>}
             <div className="play-actions">
-              {!answered ? (
-                <button onClick={checkAnswer} disabled={!userAns.trim()}>Submit Answer</button>
-              ) : (
-                <button onClick={handleNextQuestion}>
-                  {currentIndex + 1 >= questions.length ? 'Finish Quiz' : 'Next Question'}
-                </button>
-              )}
-            </div>
+  {!answered ? (
+    <button
+      className="play-button primary"
+      onClick={checkAnswer}
+      disabled={!userAns.trim()}
+    >
+      Submit Answer
+    </button>
+  ) : (
+    <button
+      className="play-button primary"
+      onClick={handleNextQuestion}
+    >
+      {currentIndex + 1 >= questions.length ? 'Finish Quiz' : 'Next Question'}
+    </button>
+  )}
+</div>
+
           </div>
         </div>
       ) : (
