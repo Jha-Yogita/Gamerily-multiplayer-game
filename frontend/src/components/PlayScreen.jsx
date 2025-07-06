@@ -204,9 +204,10 @@ const handleFinishQuiz = async () => {
 
   setWaitingForOpponent(true);
 
-  const submitResults = async (attempt = 1) => {
+  // Enhanced submission with retries
+  const submitWithRetry = async (attempt = 1) => {
     try {
-      const response = await axios.post(`${baseUrl}/api/submit-results`, {
+      return await axios.post(`${baseUrl}/api/submit-results`, {
         roomId,
         username: currentUsername,
         score: myScore,
@@ -214,23 +215,21 @@ const handleFinishQuiz = async () => {
       }, {
         timeout: 3000,
         headers: {
-          'Content-Type': 'application/json',
-          'Retry-Attempt': attempt
+          'X-Retry-Attempt': attempt
         }
       });
-      return response;
     } catch (err) {
       if (attempt >= 3) throw err;
       await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-      return submitResults(attempt + 1);
+      return submitWithRetry(attempt + 1);
     }
   };
 
   try {
-    // 1. Submit with retry logic
-    await submitResults();
+    // Submit results
+    await submitWithRetry();
 
-    // 2. Start enhanced polling
+    // Start polling with enhanced logic
     const POLL_INTERVAL = 3000;
     const MAX_ATTEMPTS = 20;
     let attempts = 0;
@@ -246,37 +245,41 @@ const handleFinishQuiz = async () => {
 
         console.log(`Poll #${attempts}`, response.data);
 
-        if (response.data.status === "complete") {
-          clearTimeout(pollTimer);
-          sessionStorage.setItem('quizResults', JSON.stringify(response.data.data));
-          navigate('/result', { state: response.data.data });
-        } else if (attempts >= MAX_ATTEMPTS) {
-          throw new Error('Results not ready after maximum attempts');
-        } else {
-          pollTimer = setTimeout(pollResults, POLL_INTERVAL);
+        // Handle all possible states
+        switch (response.data.status) {
+          case 'complete':
+            clearTimeout(pollTimer);
+            sessionStorage.setItem('quizResults', JSON.stringify(response.data.data));
+            navigate('/result', { state: response.data.data });
+            break;
+            
+          case 'pending':
+            if (attempts >= MAX_ATTEMPTS) {
+              throw new Error('Results not ready after maximum attempts');
+            }
+            pollTimer = setTimeout(pollResults, POLL_INTERVAL);
+            break;
+            
+          default:
+            throw new Error('Unexpected response status');
         }
       } catch (err) {
         clearTimeout(pollTimer);
-        console.error("Poll error:", {
-          message: err.message,
-          response: err.response?.data
-        });
-        toast.error(err.response?.data?.error || "Failed to get results");
+        console.error("Poll error:", err);
+        toast.error(err.response?.data?.error || err.message);
         navigate('/');
       }
     };
 
+    // Start polling
     pollResults();
 
+    // Cleanup
     return () => clearTimeout(pollTimer);
 
   } catch (err) {
-    console.error("Final submission error:", {
-      message: err.message,
-      config: err.config,
-      response: err.response?.data
-    });
-    toast.error(err.response?.data?.error || "Submission failed after retries");
+    console.error("Submission error:", err);
+    toast.error(err.response?.data?.error || "Failed to submit results");
     setWaitingForOpponent(false);
   }
 };
