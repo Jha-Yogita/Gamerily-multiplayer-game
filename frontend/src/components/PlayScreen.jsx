@@ -19,6 +19,8 @@ const PlayScreen = () => {
   const baseUrl = import.meta.env.VITE_API_URL;
   const questionStartTime = useRef(null);
   const totalCorrectTime = useRef(0);
+  const pollIntervalIdRef = useRef(null);
+  const pollingTimeoutIdRef = useRef(null);
 
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -46,7 +48,7 @@ const PlayScreen = () => {
         if (!socket.current || !socket.current.connected) {
           socket.current = io(`${baseUrl}`, {
             withCredentials: true,
-            transports: ['websocket','polling'],
+            transports: ['websocket', 'polling'],
             reconnectionAttempts: 5,
             reconnectionDelay: 2000
           });
@@ -90,7 +92,7 @@ const PlayScreen = () => {
             }
           });
         }
-      }, 4000); 
+      }, 4000);
     };
 
     connectWithDelay();
@@ -176,10 +178,10 @@ const PlayScreen = () => {
     setFeedback(isCorrect ? `Correct! : ${question.answer}` : `Wrong! Correct answer: ${question.answer}`);
     setFeedbackType(isCorrect ? 'correct' : 'wrong');
     if (isCorrect) {
-      setMyScore(myScore + 1);
+      setMyScore(prev => prev + 1);
       totalCorrectTime.current += timeTaken;
     }
-  }, [question, myScore]);
+  }, [question]);
 
   const checkAnswer = useCallback(() => {
     if (!question || answered) return;
@@ -187,77 +189,69 @@ const PlayScreen = () => {
     submitAnswer(isCorrect);
   }, [question, answered, userAns, checkAnswerCorrectness, submitAnswer]);
 
-const handleFinishQuiz = async () => {
-  if (solo) {
-    const soloResults = {
-      solo: true,
-      player1: {
+  const handleFinishQuiz = async () => {
+    if (solo) {
+      const soloResults = {
+        solo: true,
+        player1: {
+          username: currentUsername,
+          score: myScore,
+          totalTime: totalCorrectTime.current
+        }
+      };
+      sessionStorage.setItem('quizResults', JSON.stringify(soloResults));
+      navigate('/result', { state: soloResults });
+      return;
+    }
+
+    setWaitingForOpponent(true);
+
+    try {
+      await axios.post(`${baseUrl}/api/submit-results`, {
+        roomId,
         username: currentUsername,
         score: myScore,
         totalTime: totalCorrectTime.current
-      }
-    };
-    sessionStorage.setItem('quizResults', JSON.stringify(soloResults));
-    navigate('/result', { state: soloResults });
-    return;
-  }
+      });
 
-  setWaitingForOpponent(true);
+      pollIntervalIdRef.current = setInterval(async () => {
+        try {
+          const response = await axios.post(`${baseUrl}/api/check-results`, { roomId });
+          const data = response.data;
 
-  try {
-    // Submit current user's results
-    await axios.post(`${baseUrl}/api/submit-results`, {
-      roomId,
-      username: currentUsername,
-      score: myScore,
-      totalTime: totalCorrectTime.current
-    });
+          if (data.player1 && data.player2 && data.winner) {
+            clearInterval(pollIntervalIdRef.current);
+            clearTimeout(pollingTimeoutIdRef.current);
 
-    // Start polling
-    const pollIntervalId = setInterval(async () => {
-      try {
-        const response = await axios.post(`${baseUrl}/api/check-results`, { roomId });
-        const data = response.data;
+            const formattedResults = {
+              player1: data.player1,
+              player2: data.player2,
+              winner: data.winner,
+              solo: false
+            };
 
-        if (data.player1 && data.player2 && data.winner) {
-          clearInterval(pollIntervalId);
-          clearTimeout(pollingTimeoutId);
-
-          const formattedResults = {
-            player1: data.player1,
-            player2: data.player2,
-            winner: data.winner,
-            solo: false
-          };
-
-          sessionStorage.setItem('quizResults', JSON.stringify(formattedResults));
-          navigate('/result', { state: formattedResults });
+            sessionStorage.setItem('quizResults', JSON.stringify(formattedResults));
+            navigate('/result', { state: formattedResults });
+          }
+        } catch (err) {
+          clearInterval(pollIntervalIdRef.current);
+          clearTimeout(pollingTimeoutIdRef.current);
+          toast.error(err.message || "Failed to get results");
+          navigate('/');
         }
-      } catch (err) {
-        clearInterval(pollIntervalId);
-        clearTimeout(pollingTimeoutId);
-        toast.error(err.message || "Error fetching results.");
+      }, 2000);
+
+      pollingTimeoutIdRef.current = setTimeout(() => {
+        clearInterval(pollIntervalIdRef.current);
+        toast.error("Opponent took too long to respond");
         navigate('/');
-      }
-    }, 2000);
+      }, 30000);
 
-    const pollingTimeoutId = setTimeout(() => {
-      clearInterval(pollIntervalId);
-      toast.error("Opponent took too long to respond");
-      navigate('/');
-    }, 30000);
-
-  } catch (err) {
-    setWaitingForOpponent(false);
-    toast.error(err.response?.data?.error || "Failed to submit results");
-  }
-};
-
-
-
-
-
-
+    } catch (err) {
+      setWaitingForOpponent(false);
+      toast.error(err.response?.data?.error || "Submission failed");
+    }
+  };
 
   const handleNextQuestion = () => {
     if (currentIndex + 1 >= questions.length) {
