@@ -34,7 +34,7 @@ function Signup({ onSignupSuccess }) {
 
     console.log("Signup Response:", res.data);
     
-    // 2. If signup was successful, call onSignupSuccess immediately
+    
     if (res.data.success) {
       localStorage.setItem("user", JSON.stringify(res.data.user));
       onSignupSuccess();

@@ -68,7 +68,8 @@ function App() {
   return (
     <>
       <Router>
-        <Navbar currUser={user} />
+        <Navbar currUser={user} key={user?._id || "guest"} />
+
         <ToastContainer />
         <Routes>
           <Route path="/" element={<HomePage currUser={user}/>} />
