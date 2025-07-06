@@ -1,4 +1,5 @@
 require("dotenv").config();
+
 const express = require("express");
 const mongoose = require("mongoose");
 const session = require("express-session");
@@ -21,12 +22,14 @@ const userRoutes = require("./routes/userRoutes");
 const notifyRoutes = require("./routes/notifyRoutes");
 
 const app = express();
-const server = http.createServer(app);
+app.set("trust proxy", 1);
 app.use(cors({
   origin:  "https://gamerily.vercel.app",
   credentials: true ,
  
 }));
+const server = http.createServer(app);
+
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -181,7 +184,7 @@ app.use(
       secure: true, 
       sameSite: "none", 
       httpOnly: true,
-         domain: "gamerily.onrender.com", 
+    
          maxAge:1000 * 60 * 60 * 24,
     },
   })
