@@ -1,5 +1,6 @@
 const Question = require("../data/import.js");
 const { rooms, completedPlayers } = require("../state");
+const Result = require("../models/Result");
 
 const finalizedResults = {};
 
@@ -19,55 +20,63 @@ exports.submitResults = (req, res) => {
   return res.json({ status: "saved" });
 };
 
-// Check if both players submitted
-exports.checkResults = (req, res) => {
+
+exports.checkResults = async (req, res) => {
   const { roomId } = req.body;
 
-  // Return cached final results if available
-  if (finalizedResults[roomId]) {
-    return res.json(finalizedResults[roomId]);
-  }
+  try {
+   
+    const existingResult = await Result.findOne({ roomId });
+    if (existingResult) {
+      return res.json(existingResult);
+    }
 
-  if (!rooms[roomId] || !completedPlayers[roomId]) {
-    return res.status(404).json({ error: "Room not found" });
-  }
+    
+    if (!rooms[roomId] || !completedPlayers[roomId]) {
+      return res.status(404).json({ error: "Room not found" });
+    }
 
-  const [p1, p2] = rooms[roomId].players;
-  const p1Data = completedPlayers[roomId][p1.username];
-  const p2Data = completedPlayers[roomId][p2.username];
+    const [p1, p2] = rooms[roomId].players;
+    const p1Data = completedPlayers[roomId][p1.username];
+    const p2Data = completedPlayers[roomId][p2.username];
 
-  if (!p1Data || !p2Data) {
-    return res.json({ waiting: true }); // One player still not submitted
-  }
+   
+    if (!p1Data || !p2Data) {
+      return res.json({ waiting: true });
+    }
 
-  // Both players submitted, calculate winner
-  let winner;
-  if (p1Data.score > p2Data.score) {
-    winner = p1.username;
-  } else if (p2Data.score > p1Data.score) {
-    winner = p2.username;
-  } else {
-    // Tie-breaker: shorter total time wins
-    winner = p1Data.totalTime < p2Data.totalTime ? p1.username : p2.username;
-  }
+   
+    let winner;
+    if (p1Data.score > p2Data.score) {
+      winner = p1.username;
+    } else if (p2Data.score > p1Data.score) {
+      winner = p2.username;
+    } else {
+      
+      winner = p1Data.totalTime < p2Data.totalTime ? p1.username : p2.username;
+    }
 
-  const resultPayload = {
-    player1: { username: p1.username, ...p1Data },
-    player2: { username: p2.username, ...p2Data },
-    winner
-  };
+    const resultPayload = {
+      roomId,
+      player1: { username: p1.username, ...p1Data },
+      player2: { username: p2.username, ...p2Data },
+      winner
+    };
 
-  finalizedResults[roomId] = resultPayload;
+    
+    await Result.create(resultPayload);
 
-  // Cleanup after 2 minutes
-  setTimeout(() => {
-    delete finalizedResults[roomId];
+    
     delete completedPlayers[roomId];
     delete rooms[roomId];
-  }, 120000);
 
-  return res.json(resultPayload);
+    return res.json(resultPayload);
+  } catch (err) {
+    console.error("Error in checkResults:", err);
+    return res.status(500).json({ error: "Failed to check results" });
+  }
 };
+
 
 // Genres
 exports.getGenres = (req, res) => {

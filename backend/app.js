@@ -1,4 +1,5 @@
 require("dotenv").config();
+const Result = require("./models/Result");
 
 const express = require("express");
 const mongoose = require("mongoose");
@@ -106,45 +107,69 @@ io.on("connection", (socket) => {
     room.gameState = "playing";
   });
 
-  socket.on("submitResults", ({ roomId, username, score, totalTime }) => {
-    if (!rooms[roomId]) return;
+ 
 
-    if (!completedPlayers[roomId]) {
-      completedPlayers[roomId] = {};
+socket.on("submitResults", async ({ roomId, username, score, totalTime }) => {
+  if (!rooms[roomId]) return; // Room does not exist
+
+  // Initialize completedPlayers for the room if not already
+  if (!completedPlayers[roomId]) {
+    completedPlayers[roomId] = {};
+  }
+
+  // Store this player's result
+  completedPlayers[roomId][username] = { score, totalTime };
+
+  // Notify opponent that this player finished
+  socket.to(roomId).emit("opponentCompleted", { username, score });
+
+  const players = rooms[roomId].players;
+
+  // Check if both players submitted results
+  const allSubmitted = players.every(p => completedPlayers[roomId][p.username]);
+
+  if (allSubmitted) {
+    const [p1, p2] = players;
+    const p1Data = completedPlayers[roomId][p1.username];
+    const p2Data = completedPlayers[roomId][p2.username];
+
+    // Determine winner
+    let winner;
+    if (p1Data.score > p2Data.score) {
+      winner = p1.username;
+    } else if (p2Data.score > p1Data.score) {
+      winner = p2.username;
+    } else {
+      // Tie-breaker: shortest totalTime wins
+      winner = p1Data.totalTime < p2Data.totalTime ? p1.username : p2.username;
     }
 
-    completedPlayers[roomId][username] = { score, totalTime };
-    socket.to(roomId).emit("opponentCompleted", { username, score });
+    const resultPayload = {
+      roomId,
+      player1: { username: p1.username, ...p1Data },
+      player2: { username: p2.username, ...p2Data },
+      winner
+    };
 
-    const players = rooms[roomId].players;
-   if (players.every(p => completedPlayers[roomId][p.username] !== undefined)) {
-      const [p1, p2] = players;
-      const p1Data = completedPlayers[roomId][p1.username];
-      const p2Data = completedPlayers[roomId][p2.username];
-
-      let winner;
-      if (p1Data.score > p2Data.score) winner = p1.username;
-      else if (p2Data.score > p1Data.score) winner = p2.username;
-      else winner = p1Data.totalTime < p2Data.totalTime ? p1.username : p2.username;
-
-      const resultPayload = {
-        player1: { username: p1.username, ...p1Data },
-        player2: { username: p2.username, ...p2Data },
-        winner
-      };
-
-      finalizedResults[roomId] = resultPayload;
-
-      io.to(roomId).emit("finalResults", resultPayload);
-
-      setTimeout(() => {
-        delete finalizedResults[roomId];
-        delete completedPlayers[roomId];
-        delete rooms[roomId];
-      }, 120000);
+    try {
+      // Save result to MongoDB
+      await Result.create(resultPayload);
+      console.log(`✅ Result saved to DB for room ${roomId}`);
+    } catch (err) {
+      console.error(`❌ Failed to save result for room ${roomId}:`, err);
     }
-  });
 
+    // Emit final results to both players
+    io.to(roomId).emit("finalResults", resultPayload);
+
+    // Clean up memory (we don't need these anymore)
+    delete completedPlayers[roomId];
+    delete rooms[roomId];
+  }
+});
+
+
+// Emit final results to players
   socket.on("disconnect", () => {
     Object.entries(rooms).forEach(([roomId, room]) => {
       const playerIndex = room.players.findIndex(p => p.id === socket.id);
