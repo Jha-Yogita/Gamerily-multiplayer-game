@@ -4,79 +4,94 @@ const Result = require("../models/Result");
 
 const finalizedResults = {};
 
-exports.submitResults = (req, res) => {
-  const { roomId, username, score, totalTime } = req.body;
-  if (!roomId || !username || score === undefined || totalTime === undefined) {
-    return res.status(400).json({ error: "Missing required fields" });
-  }
+socket.on("submitResults", async ({ roomId, username, score, totalTime }) => {
+  console.log(`[submitResults] Called for roomId=${roomId}, username=${username}`);
 
   if (!rooms[roomId]) {
-    return res.status(404).json({ error: "Room does not exist" });
+    console.warn(`[submitResults] Room not found: ${roomId}`);
+    return;
   }
 
-  if (!completedPlayers[roomId]) completedPlayers[roomId] = {};
+  if (!completedPlayers[roomId]) {
+    completedPlayers[roomId] = {};
+  }
+
   completedPlayers[roomId][username] = { score, totalTime };
+  console.log(`[submitResults] Player ${username} submitted. Score=${score}, Time=${totalTime}`);
 
-  return res.json({ status: "saved" });
-};
+  socket.to(roomId).emit("opponentCompleted", { username, score });
 
+  const players = rooms[roomId].players;
+  if (players.every(p => completedPlayers[roomId][p.username] !== undefined)) {
+    console.log(`[submitResults] Both players submitted for room ${roomId}`);
 
-exports.checkResults = async (req, res) => {
-  const { roomId } = req.body;
-
-  try {
-   
-    const existingResult = await Result.findOne({ roomId });
-    if (existingResult) {
-      return res.json(existingResult);
-    }
-
-    
-    if (!rooms[roomId] || !completedPlayers[roomId]) {
-      return res.status(404).json({ error: "Room not found" });
-    }
-
-    const [p1, p2] = rooms[roomId].players;
+    const [p1, p2] = players;
     const p1Data = completedPlayers[roomId][p1.username];
     const p2Data = completedPlayers[roomId][p2.username];
 
-   
-    if (!p1Data || !p2Data) {
-      return res.json({ waiting: true });
-    }
-
-   
     let winner;
-    if (p1Data.score > p2Data.score) {
-      winner = p1.username;
-    } else if (p2Data.score > p1Data.score) {
-      winner = p2.username;
-    } else {
-      
-      winner = p1Data.totalTime < p2Data.totalTime ? p1.username : p2.username;
-    }
+    if (p1Data.score > p2Data.score) winner = p1.username;
+    else if (p2Data.score > p1Data.score) winner = p2.username;
+    else winner = p1Data.totalTime < p2Data.totalTime ? p1.username : p2.username;
 
     const resultPayload = {
-      roomId,
       player1: { username: p1.username, ...p1Data },
       player2: { username: p2.username, ...p2Data },
       winner
     };
 
-    
-    await Result.create(resultPayload);
+    finalizedResults[roomId] = resultPayload;
 
-    
-    delete completedPlayers[roomId];
-    delete rooms[roomId];
+    // Save result to MongoDB
+    try {
+      console.log(`[submitResults] Saving result to DB for room ${roomId}`);
+      const saved = await Result.create({
+        roomId,
+        player1: resultPayload.player1,
+        player2: resultPayload.player2,
+        winner: resultPayload.winner
+      });
+      console.log(`[submitResults] DB Save Success: ${saved._id}`);
+    } catch (err) {
+      console.error(`[submitResults] DB Save Failed:`, err);
+    }
 
-    return res.json(resultPayload);
-  } catch (err) {
-    console.error("Error in checkResults:", err);
-    return res.status(500).json({ error: "Failed to check results" });
+    io.to(roomId).emit("finalResults", resultPayload);
+
+    setTimeout(() => {
+      delete finalizedResults[roomId];
+      delete completedPlayers[roomId];
+      delete rooms[roomId];
+    }, 120000);
   }
-};
+});
 
+
+exports.checkResults = async (req, res) => {
+  const { roomId } = req.body;
+  console.log(`[checkResults] Called for roomId=${roomId}`);
+
+  if (finalizedResults[roomId]) {
+    console.log(`[checkResults] Cache hit for room ${roomId}`);
+    return res.json(finalizedResults[roomId]);
+  }
+
+  console.log(`[checkResults] Cache miss. Checking MongoDB...`);
+  try {
+    const dbResult = await Result.findOne({ roomId });
+    if (dbResult) {
+      console.log(`[checkResults] Found result in DB for room ${roomId}`);
+      return res.json(dbResult);
+    } else {
+      console.log(`[checkResults] No result in DB for room ${roomId}`);
+    }
+  } catch (err) {
+    console.error(`[checkResults] DB lookup failed:`, err);
+    return res.status(500).json({ error: "DB lookup failed" });
+  }
+
+  return res.status(404).json({ error: "Room not found" });
+};
 
 // Genres
 exports.getGenres = (req, res) => {

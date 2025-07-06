@@ -37,10 +37,13 @@ app.use(express.urlencoded({ extended: true }));
 
 const io = socketIO(server, {
   cors: {
-    origin:  "https://gamerily.vercel.app",
+    origin: "https://gamerily.vercel.app",
     methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
+    preflightContinue: false
   },
+  transports: ['websocket', 'polling']
 });
 
 io.on("connection", (socket) => {
