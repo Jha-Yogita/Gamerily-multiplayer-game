@@ -16,11 +16,11 @@ const PlayScreen = () => {
   const currentUsername = localStorage.getItem('username') || 'Player';
   const opponentRef = useRef(null);
   const timerRef = useRef(null);
+  const pollIntervalIdRef = useRef(null);
+  const pollingTimeoutIdRef = useRef(null);
   const baseUrl = import.meta.env.VITE_API_URL;
   const questionStartTime = useRef(null);
   const totalCorrectTime = useRef(0);
-  const pollIntervalIdRef = useRef(null);
-  const pollingTimeoutIdRef = useRef(null);
 
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -53,64 +53,36 @@ const PlayScreen = () => {
             reconnectionDelay: 2000
           });
 
-          socket.current.on('connect', () => {
-            console.log("✅ Socket connected");
-            setSocketConnected(true);
-          });
-
-          socket.current.on('disconnect', () => {
-            console.log("❌ Socket disconnected");
-            setSocketConnected(false);
-          });
-
-          socket.current.on('connect_error', (err) => {
-            toast.error('Connection failed. Please try again.');
-          });
-
-          socket.current.on('opponentCompleted', ({ username, score }) => {
+          socket.current.on('connect', () => setSocketConnected(true));
+          socket.current.on('disconnect', () => setSocketConnected(false));
+          socket.current.on('connect_error', () => toast.error('Socket connection failed.'));
+          socket.current.on('opponentCompleted', ({ username }) => {
             if (username === opponentRef.current) {
               setOpponentFinished(true);
               toast.info(`${username} has finished!`);
             }
           });
-
-          socket.current.on('finalResults', (resultsData) => {
-            const formatted = {
-              player1: resultsData.player1,
-              player2: resultsData.player2,
-              winner: resultsData.winner,
-              solo: false
-            };
-            sessionStorage.setItem('quizResults', JSON.stringify(formatted));
-            navigate('/result', { state: formatted, replace: true });
-          });
-
           socket.current.on('playerDisconnected', ({ username }) => {
             if (username === opponentRef.current) {
               toast.error(`${username} disconnected`);
-              navigate('/', { replace: true });
+              navigate('/');
             }
           });
         }
-      }, 4000);
+      }, 3000);
     };
 
     connectWithDelay();
 
     return () => {
-      if (socket.current) {
-        socket.current.off('finalResults');
-        socket.current.off('opponentCompleted');
-        if (solo) {
-          socket.current.disconnect();
-        }
-      }
+      clearInterval(pollIntervalIdRef.current);
+      clearTimeout(pollingTimeoutIdRef.current);
+      if (socket.current) socket.current.disconnect();
     };
   }, [solo, players, currentUsername, navigate]);
 
   useEffect(() => {
     const sharedQuestions = location.state?.questions;
-
     if (!solo && sharedQuestions) {
       setQuestions(sharedQuestions);
       setCurrentIndex(0);
@@ -126,11 +98,10 @@ const PlayScreen = () => {
           resetQuestionState();
           questionStartTime.current = Date.now();
           startTimer();
-        } catch (err) {
+        } catch {
           toast.error('Error loading questions');
         }
       };
-
       fetchQuestions();
     }
 
@@ -164,18 +135,18 @@ const PlayScreen = () => {
   };
 
   const checkAnswerCorrectness = useCallback((userAnswer, correctAnswer) => {
-    const sanitize = (str) => str.trim().toLowerCase().replace(/[^a-z0-9\s]/g, '');
-    const userAns = sanitize(userAnswer);
-    const correctAns = sanitize(correctAnswer);
-    const correctWords = correctAns.split(/\s+/);
-    return correctWords.some(word => userAns.includes(word)) || userAns === correctAns;
+    const sanitize = str => str.trim().toLowerCase().replace(/[^a-z0-9\s]/g, '');
+    const user = sanitize(userAnswer);
+    const correct = sanitize(correctAnswer);
+    const correctWords = correct.split(/\s+/);
+    return correctWords.some(word => user.includes(word)) || user === correct;
   }, []);
 
   const submitAnswer = useCallback((isCorrect) => {
     setAnswered(true);
     clearInterval(timerRef.current);
     const timeTaken = (Date.now() - questionStartTime.current) / 1000;
-    setFeedback(isCorrect ? `Correct! : ${question.answer}` : `Wrong! Correct answer: ${question.answer}`);
+    setFeedback(isCorrect ? `Correct! : ${question.answer}` : `Wrong! Correct: ${question.answer}`);
     setFeedbackType(isCorrect ? 'correct' : 'wrong');
     if (isCorrect) {
       setMyScore(prev => prev + 1);
@@ -222,21 +193,14 @@ const PlayScreen = () => {
           if (data.player1 && data.player2 && data.winner) {
             clearInterval(pollIntervalIdRef.current);
             clearTimeout(pollingTimeoutIdRef.current);
-
-            const formattedResults = {
-              player1: data.player1,
-              player2: data.player2,
-              winner: data.winner,
-              solo: false
-            };
-
-            sessionStorage.setItem('quizResults', JSON.stringify(formattedResults));
-            navigate('/result', { state: formattedResults });
+            const formatted = { ...data, solo: false };
+            sessionStorage.setItem('quizResults', JSON.stringify(formatted));
+            navigate('/result', { state: formatted });
           }
         } catch (err) {
           clearInterval(pollIntervalIdRef.current);
           clearTimeout(pollingTimeoutIdRef.current);
-          toast.error(err.message || "Failed to get results");
+          toast.error("Error polling result.");
           navigate('/');
         }
       }, 2000);
@@ -265,7 +229,7 @@ const PlayScreen = () => {
   };
 
   useEffect(() => {
-    const handleKeyDown = (e) => {
+    const handleKeyDown = e => {
       if (e.key === 'Enter' && !answered) checkAnswer();
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -282,15 +246,7 @@ const PlayScreen = () => {
             <p>Your Score: {myScore}</p>
             <p>Status: {opponentFinished ? 'Finished' : 'Playing...'}</p>
           </div>
-          <button
-            className="cancel-button"
-            onClick={() => {
-              toast.dismiss('waiting-toast');
-              navigate('/');
-            }}
-          >
-            Cancel
-          </button>
+          <button onClick={() => navigate('/')}>Cancel</button>
         </div>
       </div>
     );
@@ -301,51 +257,32 @@ const PlayScreen = () => {
       {!solo && (
         <div className="versus-title">
           {currentUsername} <span className="vs">vs</span> {opponentRef.current}
-          {!socketConnected && (
-            <span className="connection-badge">
-              {reconnectAttempts > 0 ? `Reconnecting (${reconnectAttempts})` : 'Connecting...'}
-            </span>
-          )}
         </div>
       )}
       <div className="score-board">
-        <div className="player-score you">
-          {currentUsername}: {myScore}
-        </div>
+        <div className="player-score you">{currentUsername}: {myScore}</div>
         <div className="timer">Time: {timer}s</div>
       </div>
-
       {question ? (
         <div className="play-card">
           <div className="play-content">
-            <h2 className="play-title">{question.category}</h2>
-            <p className="play-question">{question.question}</p>
+            <h2>{question.category}</h2>
+            <p>{question.question}</p>
             <input
               type="text"
-              placeholder="Enter your answer..."
               value={userAns}
               onChange={(e) => setUserAns(e.target.value)}
               disabled={answered}
+              placeholder="Enter your answer..."
               className="play-input"
               autoFocus
             />
-            {feedback && (
-              <div className={`feedback ${feedbackType}`}>{feedback}</div>
-            )}
+            {feedback && <div className={`feedback ${feedbackType}`}>{feedback}</div>}
             <div className="play-actions">
               {!answered ? (
-                <button
-                  onClick={checkAnswer}
-                  className="play-button primary"
-                  disabled={!userAns.trim()}
-                >
-                  Submit Answer
-                </button>
+                <button onClick={checkAnswer} disabled={!userAns.trim()}>Submit Answer</button>
               ) : (
-                <button
-                  onClick={handleNextQuestion}
-                  className="play-button secondary"
-                >
+                <button onClick={handleNextQuestion}>
                   {currentIndex + 1 >= questions.length ? 'Finish Quiz' : 'Next Question'}
                 </button>
               )}

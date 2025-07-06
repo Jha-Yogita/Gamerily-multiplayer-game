@@ -16,20 +16,18 @@ const Result = () => {
         return;
       }
 
-      const savedResults = sessionStorage.getItem('quizResults');
-      if (savedResults) {
-        setResults(JSON.parse(savedResults));
+      const saved = sessionStorage.getItem('quizResults');
+      if (saved) {
+        setResults(JSON.parse(saved));
       } else {
-        navigate('/');
+        setTimeout(() => navigate('/'), 100);
       }
     };
-
     loadResults();
   }, [location.state, navigate]);
 
   const processResults = (data) => {
     const isSolo = data.solo === true;
-    
     return {
       solo: isSolo,
       player1: {
@@ -46,15 +44,7 @@ const Result = () => {
     };
   };
 
-  if (!results) {
-    return (
-      <div className="result-container">
-        <div className="result-card">
-          <h1>Loading Results...</h1>
-        </div>
-      </div>
-    );
-  }
+  if (!results) return <div className="result-container"><h1>Loading Results...</h1></div>;
 
   return (
     <div className="result-container">
