@@ -4,67 +4,21 @@ const Result = require("../models/Result");
 
 const finalizedResults = {};
 
-socket.on("submitResults", async ({ roomId, username, score, totalTime }) => {
-  console.log(`[submitResults] Called for roomId=${roomId}, username=${username}`);
+exports.submitResults = (req, res) => {
+  const { roomId, username, score, totalTime } = req.body;
+  if (!roomId || !username || score === undefined || totalTime === undefined) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
 
   if (!rooms[roomId]) {
-    console.warn(`[submitResults] Room not found: ${roomId}`);
-    return;
+    return res.status(404).json({ error: "Room does not exist" });
   }
 
-  if (!completedPlayers[roomId]) {
-    completedPlayers[roomId] = {};
-  }
-
+  if (!completedPlayers[roomId]) completedPlayers[roomId] = {};
   completedPlayers[roomId][username] = { score, totalTime };
-  console.log(`[submitResults] Player ${username} submitted. Score=${score}, Time=${totalTime}`);
 
-  socket.to(roomId).emit("opponentCompleted", { username, score });
-
-  const players = rooms[roomId].players;
-  if (players.every(p => completedPlayers[roomId][p.username] !== undefined)) {
-    console.log(`[submitResults] Both players submitted for room ${roomId}`);
-
-    const [p1, p2] = players;
-    const p1Data = completedPlayers[roomId][p1.username];
-    const p2Data = completedPlayers[roomId][p2.username];
-
-    let winner;
-    if (p1Data.score > p2Data.score) winner = p1.username;
-    else if (p2Data.score > p1Data.score) winner = p2.username;
-    else winner = p1Data.totalTime < p2Data.totalTime ? p1.username : p2.username;
-
-    const resultPayload = {
-      player1: { username: p1.username, ...p1Data },
-      player2: { username: p2.username, ...p2Data },
-      winner
-    };
-
-    finalizedResults[roomId] = resultPayload;
-
-    // Save result to MongoDB
-    try {
-      console.log(`[submitResults] Saving result to DB for room ${roomId}`);
-      const saved = await Result.create({
-        roomId,
-        player1: resultPayload.player1,
-        player2: resultPayload.player2,
-        winner: resultPayload.winner
-      });
-      console.log(`[submitResults] DB Save Success: ${saved._id}`);
-    } catch (err) {
-      console.error(`[submitResults] DB Save Failed:`, err);
-    }
-
-    io.to(roomId).emit("finalResults", resultPayload);
-
-    setTimeout(() => {
-      delete finalizedResults[roomId];
-      delete completedPlayers[roomId];
-      delete rooms[roomId];
-    }, 120000);
-  }
-});
+  return res.json({ status: "saved" });
+};
 
 
 exports.checkResults = async (req, res) => {
@@ -92,6 +46,7 @@ exports.checkResults = async (req, res) => {
 
   return res.status(404).json({ error: "Room not found" });
 };
+
 
 // Genres
 exports.getGenres = (req, res) => {
